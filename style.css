@@ -37,13 +37,13 @@ body {
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background: rgba(22, 33, 62, 0.9);
+    background: linear-gradient(180deg,#17223b 0%, #19273f 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     color: var(--white);
     position: fixed;
     height: 100vh;
-    z-index: 100;
+    z-index: 1200;
     display: flex;
     flex-direction: column;
     transition: transform var(--transition);
@@ -67,6 +67,8 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 10;
 }
 
 .top-bar {
@@ -143,6 +145,31 @@ body {
     border: 1px solid #ddd;
     outline: none;
 }
+
+/* Fancy select in sidebar */
+#semester-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#semester-select:focus { box-shadow: 0 6px 18px rgba(15,23,42,0.25); }
+
+.sidebar .menu-label { color: rgba(255,255,255,0.9); font-weight:600; margin-bottom:0.5rem; }
+.semester-selector { display:flex; gap:8px; align-items:center; }
+.btn.btn-accent { background: rgba(255,255,255,0.12); color: white; border-radius:8px; padding:6px 8px; }
+
+/* Improve card visuals */
+.card { border-radius: 14px; }
+.chart-card { background: linear-gradient(180deg, #ffffff, #f7fbff); }
+.stats-card { background: linear-gradient(180deg,#fff7f6,#fff); }
+
+/* Make empty state lighter */
+.empty-state h3 { color: #4b5563; }
 
 .glass-input-table {
     width: 60px;
