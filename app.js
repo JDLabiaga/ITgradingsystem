@@ -200,9 +200,41 @@ document.querySelectorAll('[data-close]').forEach(el => {
 });
 
 async function addSemester() {
-    const name = $('semester-name').value;
-    await db.from('semesters').insert([{ name }]);
-    location.reload();
+    const btn = $('save-semester-btn');
+    const name = $('semester-name').value?.trim();
+    if (!name) { showToast('Please enter a semester name','danger'); return; }
+    btn.disabled = true;
+    try {
+        const { data, error } = await db.from('semesters').insert([{ name }]).select().single();
+        if (error) throw error;
+        showToast('Semester created', 'success');
+        closeModal('semester-modal');
+        // reload semesters and select new
+        await loadSemesters();
+        if (data && data.id) {
+            currentSemesterId = data.id;
+            const sel = $('semester-select');
+            if (sel) sel.value = data.id;
+            await loadDashboard();
+        }
+    } catch (err) {
+        console.error('addSemester error', err);
+        showToast('Failed to create semester', 'danger');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Toast helper
+function showToast(message, type = 'info', timeout = 3500) {
+    const container = $('toast-container');
+    if (!container) return;
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.style.borderLeftColor = type === 'danger' ? 'var(--danger)' : type === 'success' ? 'var(--success)' : 'var(--primary)';
+    t.textContent = message;
+    container.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.addEventListener('transitionend', () => t.remove()); }, timeout);
 }
 
 async function addSubject() {
