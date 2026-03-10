@@ -39,18 +39,43 @@ async function loadSemesters() {
         const { data, error, status } = await db.from('semesters').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error('loadSemesters error', error, status);
+            // If error indicates missing API key or 401, try REST fallback
+            if (status === 401 || (error && /No API key/i.test(error.message || ''))) {
+                const fallback = await restFetch('/semesters?select=*');
+                if (fallback.ok) {
+                    const json = await fallback.json();
+                    renderSemestersToSelect(json);
+                    return;
+                }
+            }
             showToast('Failed to load semesters: ' + (error.message || status), 'danger');
             return;
         }
-        const select = $('semester-select');
-        select.innerHTML = '<option value="">Select Semester</option>';
-        data?.forEach(sem => {
-            select.innerHTML += `<option value="${sem.id}">${sem.name}</option>`;
-        });
+        renderSemestersToSelect(data);
     } catch (err) {
         console.error('loadSemesters unexpected', err);
         showToast('Unexpected error loading semesters', 'danger');
     }
+}
+
+function renderSemestersToSelect(data) {
+    const select = $('semester-select');
+    if (!select) return;
+    select.innerHTML = '<option value="">Select Semester</option>';
+    data?.forEach(sem => {
+        select.innerHTML += `<option value="${sem.id}">${sem.name}</option>`;
+    });
+}
+
+// Lightweight REST fallback using the anon key when supabase-js fails to attach headers
+function restFetch(path, method = 'GET', body = null) {
+    const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1' + path;
+    const headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+    };
+    if (body) headers['Content-Type'] = 'application/json';
+    return fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
 }
 
 async function loadDashboard() {
@@ -229,6 +254,29 @@ async function addSemester() {
         }
     } catch (err) {
         console.error('addSemester error', err);
+        console.error('addSemester error', err);
+        // If the error indicates missing API key / 401, attempt REST fallback
+        if (err && (err.status === 401 || /No API key/i.test(err.message || ''))) {
+            try {
+                const res = await restFetch('/semesters', 'POST', { name });
+                if (res.ok) {
+                    const created = await res.json();
+                    showToast('Semester created (fallback)', 'success');
+                    closeModal('semester-modal');
+                    await loadSemesters();
+                    if (created && created[0] && created[0].id) {
+                        currentSemesterId = created[0].id;
+                        const sel = $('semester-select'); if (sel) sel.value = created[0].id;
+                        await loadDashboard();
+                    }
+                    btn.disabled = false;
+                    return;
+                } else {
+                    const txt = await res.text();
+                    console.error('rest fallback failed', res.status, txt);
+                }
+            } catch (re) { console.error('rest fallback error', re); }
+        }
         showToast('Failed to create semester', 'danger');
     } finally {
         btn.disabled = false;
