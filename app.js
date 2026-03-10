@@ -41,12 +41,12 @@ function bindEvents() {
 
 async function loadSemesters() {
     try {
-        const { data, error, status } = await db.from('semesters').select('*').order('created_at', { ascending: false });
+        const { data, error, status } = await db.from('semesters2').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error('loadSemesters error', error, status);
             // If error indicates missing API key or 401, try REST fallback
             if (status === 401 || (error && /No API key/i.test(error.message || ''))) {
-                const fallback = await restFetch('/semesters?select=*');
+                const fallback = await restFetch('/semesters2?select=*');
                 if (fallback.ok) {
                     const json = await fallback.json();
                     renderSemestersToSelect(json);
@@ -91,7 +91,7 @@ async function loadDashboard() {
     }
     
     $('empty-state').style.display = 'none';
-    const { data: subData } = await db.from('subjects').select('*').eq('semester_id', currentSemesterId);
+    const { data: subData } = await db.from('subjects2').select('*').eq('semester_id', currentSemesterId);
     subjects = subData || [];
     renderSubjectList();
     
@@ -108,8 +108,8 @@ async function loadDashboard() {
 }
 
 async function loadStudents() {
-    const { data: studentList } = await db.from('students').select('*').eq('semester_id', currentSemesterId);
-    const { data: gradeData } = await db.from('grades').select('*').in('student_id', studentList.map(s => s.id));
+    const { data: studentList } = await db.from('students2').select('*').eq('semester_id', currentSemesterId);
+    const { data: gradeData } = await db.from('grades2').select('*').in('student_id', studentList.map(s => s.id));
     
     students = studentList.map(s => ({
         ...s,
@@ -274,7 +274,7 @@ async function addSemester() {
         }
 
         const payload = teacher_id ? { name, teacher_id } : { name };
-        const { data, error } = await db.from('semesters').insert([payload]).select().single();
+        const { data, error } = await db.from('semesters2').insert([payload]).select().single();
         if (error) throw error;
         showToast('Semester created', 'success');
         closeModal('semester-modal');
@@ -293,7 +293,7 @@ async function addSemester() {
         if (err && (err.status === 401 || /No API key/i.test(err.message || ''))) {
             try {
                 const fallbackPayload = teacher_id ? { name, teacher_id } : { name };
-                const res = await restFetch('/semesters', 'POST', fallbackPayload);
+                    const res = await restFetch('/semesters2', 'POST', fallbackPayload);
                 if (res.ok) {
                     const created = await res.json();
                     showToast('Semester created (fallback)', 'success');
@@ -332,14 +332,14 @@ function showToast(message, type = 'info', timeout = 3500) {
 
 async function addSubject() {
     const name = $('new-subject-name').value;
-    await db.from('subjects').insert([{ name, semester_id: currentSemesterId }]);
+    await db.from('subjects2').insert([{ name, semester_id: currentSemesterId }]);
     loadDashboard();
     closeModal('subject-modal');
 }
 
 async function saveStudent() {
     const name = $('new-student-name').value;
-    const { data } = await db.from('students').insert([{ 
+    const { data } = await db.from('students2').insert([{ 
         full_name: name, 
         semester_id: currentSemesterId,
         year_level: $('new-student-year').value,
@@ -348,14 +348,14 @@ async function saveStudent() {
     
     // Add default grades
     const grades = subjects.map(sub => ({ student_id: data.id, subject_id: sub.id, score: 0 }));
-    await db.from('grades').insert(grades);
+    await db.from('grades2').insert(grades);
     
     closeModal('student-modal');
     loadStudents();
 }
 
 async function updateGrade(sid, subid, val) {
-    await db.from('grades').update({ score: parseFloat(val) }).match({ student_id: sid, subject_id: subid });
+    await db.from('grades2').update({ score: parseFloat(val) }).match({ student_id: sid, subject_id: subid });
     loadStudents(); // Refresh average
 }
 
