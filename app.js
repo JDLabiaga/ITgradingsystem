@@ -7,6 +7,7 @@ let currentSemesterId = null;
 let subjects = [];
 let students = [];
 let dashboardChart = null;
+let selectedSubjectId = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -30,6 +31,10 @@ function bindEvents() {
     $('save-semester-btn').onclick = addSemester;
     $('add-subject-btn').onclick = () => openModal('subject-modal');
     $('save-subject-btn').onclick = addSubject;
+    // Search & filters
+    const search = $('search-input'); if (search) search.oninput = () => renderTable();
+    const fy = $('filter-year'); if (fy) fy.onchange = () => renderTable();
+    const fs = $('filter-section'); if (fs) fs.onchange = () => renderTable();
     $('add-student-btn').onclick = openAddStudentModal;
     $('save-student-btn').onclick = saveStudent;
 }
@@ -88,6 +93,7 @@ async function loadDashboard() {
     $('empty-state').style.display = 'none';
     const { data: subData } = await db.from('subjects').select('*').eq('semester_id', currentSemesterId);
     subjects = subData || [];
+    renderSubjectList();
     
     if (subjects.length === 0) {
         $('no-subjects-state').style.display = 'flex';
@@ -109,24 +115,28 @@ async function loadStudents() {
         ...s,
         grades: gradeData.filter(g => g.student_id === s.id)
     }));
+    populateFilterOptions();
     renderTable();
     // Update dashboard chart & stats
     try {
-        const labels = subjects.map(s => s.name);
-        const averages = subjects.map(s => {
-            let total = 0, count = 0;
-            students.forEach(st => {
-                const g = st.grades.find(x => x.subject_id === s.id);
-                if (g) { total += g.score; count++; }
-            });
-            return count ? parseFloat((total / count).toFixed(1)) : 0;
-        });
+        const searchVal = $('search-input')?.value?.toLowerCase() || '';
+        const yearFilter = $('filter-year')?.value || '';
+        const sectionFilter = $('filter-section')?.value || '';
 
-        // Class average and pass rate
-        const studentAverages = students.map(st => {
-            if (subjects.length === 0) return 0;
-            const total = subjects.reduce((acc, sub) => acc + (st.grades.find(g => g.subject_id === sub.id)?.score || 0), 0);
-            return total / subjects.length;
+        head.innerHTML = '<th>Name</th><th>Year/Sec</th>';
+        subjects.forEach(sub => head.innerHTML += `<th>${sub.name}</th>`);
+        head.innerHTML += '<th>Avg</th><th>Action</th>';
+
+        body.innerHTML = '';
+        students.filter(s => {
+            if (searchVal) {
+                const name = (s.full_name || '').toLowerCase();
+                if (!name.includes(searchVal)) return false;
+            }
+            if (yearFilter && String(s.year_level) !== String(yearFilter)) return false;
+            if (sectionFilter && String(s.section) !== String(sectionFilter)) return false;
+            return true;
+        }).forEach(s => {
         });
         const totalStudents = students.length;
         const classAvg = totalStudents ? (studentAverages.reduce((a,b)=>a+b,0)/totalStudents).toFixed(1) : 0;
@@ -141,6 +151,18 @@ async function loadStudents() {
         updateChart(labels, averages);
     } catch (e) {
         console.warn('Chart update skipped', e);
+    }
+
+    function populateFilterOptions() {
+        const years = Array.from(new Set(students.map(s => s.year_level))).filter(Boolean).sort();
+        const sections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
+        const fy = $('filter-year'); const fs = $('filter-section');
+        if (fy) {
+            fy.innerHTML = '<option value="">Year Level</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+        }
+        if (fs) {
+            fs.innerHTML = '<option value="">Section</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
     }
 }
 
@@ -350,4 +372,31 @@ function openAddStudentModal() {
         $('grade-inputs').innerHTML += `<div class="input-group"><span>${sub.name}</span><input type="number" value="0"></div>`;
     });
     openModal('student-modal');
+}
+
+function renderSubjectList() {
+    const wrapper = $('subject-list');
+    const section = document.getElementById('subjects-section');
+    if (!wrapper) return;
+    if (!subjects || subjects.length === 0) {
+        wrapper.innerHTML = '';
+        if (section) section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+    wrapper.innerHTML = '';
+    subjects.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'subject-item';
+        el.textContent = s.name;
+        el.dataset.id = s.id;
+        el.onclick = () => {
+            selectedSubjectId = s.id === selectedSubjectId ? null : s.id;
+            // highlight
+            document.querySelectorAll('.subject-item').forEach(it => it.classList.remove('active'));
+            if (selectedSubjectId) el.classList.add('active');
+            renderTable();
+        };
+        wrapper.appendChild(el);
+    });
 }
