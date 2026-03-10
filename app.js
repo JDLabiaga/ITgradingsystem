@@ -344,20 +344,33 @@ async function addSubject() {
 }
 
 async function saveStudent() {
-    const name = $('new-student-name').value;
-    const { data } = await db.from('students2').insert([{ 
-        full_name: name, 
-        semester_id: currentSemesterId,
-        year_level: $('new-student-year').value,
-        section: $('new-student-section').value
-    }]).select().single();
-    
-    // Add default grades
-    const grades = subjects.map(sub => ({ student_id: data.id, subject_id: sub.id, score: 0 }));
-    await db.from('grades2').insert(grades);
-    
-    closeModal('student-modal');
-    loadStudents();
+    const name = $('new-student-name').value?.trim();
+    const year = $('new-student-year').value?.trim();
+    const section = $('new-student-section').value?.trim();
+
+    if (!currentSemesterId) { showToast('Please select a semester first','danger'); return; }
+    if (!subjects || subjects.length === 0) { showToast('Add at least one subject before adding students','danger'); return; }
+    if (!name) { showToast('Please enter the student full name','danger'); return; }
+
+    try {
+        const { data } = await db.from('students2').insert([{ 
+            full_name: name, 
+            semester_id: currentSemesterId,
+            year_level: year,
+            section: section
+        }]).select().single();
+
+        // Add default grades
+        const grades = subjects.map(sub => ({ student_id: data.id, subject_id: sub.id, score: 0 }));
+        await db.from('grades2').insert(grades);
+
+        closeModal('student-modal');
+        showToast('Student added', 'success');
+        loadStudents();
+    } catch (err) {
+        console.error('saveStudent error', err);
+        showToast('Failed to add student','danger');
+    }
 }
 
 async function updateGrade(sid, subid, val) {
@@ -367,7 +380,7 @@ async function updateGrade(sid, subid, val) {
 
 async function deleteStudent(id) {
     if(confirm("Delete student?")) {
-        await db.from('students').delete().eq('id', id);
+        await db.from('students2').delete().eq('id', id);
         loadStudents();
     }
 }
@@ -378,6 +391,8 @@ function openAddStudentModal() {
         $('grade-inputs').innerHTML += `<div class="input-group"><span>${sub.name}</span><input type="number" value="0"></div>`;
     });
     openModal('student-modal');
+    // autofocus name input
+    setTimeout(()=>{ const input = document.getElementById('new-student-name'); if(input) input.focus(); }, 100);
 }
 
 function renderSubjectList() {

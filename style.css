@@ -131,6 +131,22 @@ body {
     margin-top: 1rem;
 }
 
+/* Table header improvements */
+#student-table thead th {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px;
+    border-radius: 8px;
+}
+
+#student-table tbody td { padding: 12px; }
+
+.table-controls { display:flex; gap:1rem; align-items:center; padding: 0.5rem 0; }
+.table-search { flex: 1; display:flex; align-items:center; gap:8px; }
+.table-filters { display:flex; gap:0.5rem; }
+
+.btn-sm { padding:6px 10px; font-size:0.95rem; }
+
 /* Empty state centered */
 .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; color:var(--text-light); }
 
