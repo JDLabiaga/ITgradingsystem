@@ -161,6 +161,8 @@ body {
 
 .sidebar .menu-label { color: rgba(255,255,255,0.9); font-weight:600; margin-bottom:0.5rem; }
 .semester-selector { display:flex; gap:8px; align-items:center; }
+.semester-selector select { flex: 1; min-width: 0; }
+.semester-selector button { flex: 0 0 auto; z-index: 1300; }
 .btn.btn-accent { background: rgba(255,255,255,0.12); color: white; border-radius:8px; padding:6px 8px; }
 
 /* Improve card visuals */
