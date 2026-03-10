@@ -166,32 +166,38 @@ function renderTable() {
 }
 
 // Helper: Modals
-function openModal(id) { $(id).classList.add('active'); }
-function closeModal(id) { $(id).classList.remove('active'); }
-document.querySelectorAll('[data-close]').forEach(el => {
-    // If the element is the overlay, only close when the overlay itself is clicked (prevent inner clicks from closing)
-    if (el.classList.contains('modal-overlay')) {
+function closeModal(id) { const el = $(id); if (el) el.classList.remove('active'); }
+
+// Open modal and autofocus the first input inside it. Clicking the overlay closes only when clicking the overlay itself.
+function openModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.add('active');
+
+    // Attach safe overlay click handler (only once)
+    if (!el._overlayHandlerAttached) {
         el.addEventListener('click', (e) => {
             if (e.target === el) closeModal(el.dataset.close);
         });
-    } else {
-        el.addEventListener('click', () => closeModal(el.dataset.close));
+        el._overlayHandlerAttached = true;
     }
-});
 
-// Autofocus inputs when opening modal (useful for semester creation)
-const _openModal = openModal;
-function openModal(id) {
-    _openModal(id);
+    // autofocus first input inside the modal
     try {
-        const overlay = $(id);
-        const modal = overlay && overlay.querySelector('.modal');
+        const modal = el.querySelector('.modal');
         if (modal) {
             const input = modal.querySelector('input, textarea, select');
             if (input) input.focus();
         }
     } catch (e) { /* ignore */ }
 }
+
+// Wire up close buttons (elements with data-close attribute other than overlays)
+document.querySelectorAll('[data-close]').forEach(el => {
+    if (!el.classList.contains('modal-overlay')) {
+        el.addEventListener('click', () => closeModal(el.dataset.close));
+    }
+});
 
 async function addSemester() {
     const name = $('semester-name').value;
