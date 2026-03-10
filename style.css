@@ -273,3 +273,50 @@ body {
     display: block;
     pointer-events: auto;
 }
+
+/* Badge Styles */
+.badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.badge.pass { background: #dcfce7; color: #166534; }
+.badge.fail { background: #fee2e2; color: #991b1b; }
+
+/* Modal body scroll if many subjects */
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Toast animations */
+.toast {
+    transition: opacity 0.5s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.toast.success { border-left-color: var(--success); }
+.toast.danger { border-left-color: var(--danger); }
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 50%;
+}
+
+.btn-icon:hover {
+    background-color: rgba(128, 0, 0, 0.1); /* Light maroon tint */
+    color: var(--primary);
+    transform: scale(1.1);
+}
