@@ -266,13 +266,7 @@ body {
     .main-content { margin-left: 0; }
     .sidebar-open-btn { display: block; }
 }
-.sidebar-content {
-    flex: 1;
-    overflow-y: auto; /* This prevents "Add Subject" from disappearing if list is long */
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-}
+
 /* Sidebar overlay (click to close sidebar on mobile) */
 .sidebar-overlay {
     position: fixed;
