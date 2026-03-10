@@ -6,11 +6,13 @@ let currentUser = { id: '00000000-0000-0000-0000-000000000000' };
 let currentSemesterId = null;
 let subjects = [];
 let students = [];
+let dashboardChart = null;
 
 const $ = (id) => document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSemesters();
+    initChart();
     bindEvents();
 });
 
@@ -73,6 +75,70 @@ async function loadStudents() {
         grades: gradeData.filter(g => g.student_id === s.id)
     }));
     renderTable();
+    // Update dashboard chart & stats
+    try {
+        const labels = subjects.map(s => s.name);
+        const averages = subjects.map(s => {
+            let total = 0, count = 0;
+            students.forEach(st => {
+                const g = st.grades.find(x => x.subject_id === s.id);
+                if (g) { total += g.score; count++; }
+            });
+            return count ? parseFloat((total / count).toFixed(1)) : 0;
+        });
+
+        // Class average and pass rate
+        const studentAverages = students.map(st => {
+            if (subjects.length === 0) return 0;
+            const total = subjects.reduce((acc, sub) => acc + (st.grades.find(g => g.subject_id === sub.id)?.score || 0), 0);
+            return total / subjects.length;
+        });
+        const totalStudents = students.length;
+        const classAvg = totalStudents ? (studentAverages.reduce((a,b)=>a+b,0)/totalStudents).toFixed(1) : 0;
+        const passCount = studentAverages.filter(a => a >= 75).length;
+        const passRate = totalStudents ? Math.round((passCount / totalStudents) * 100) : 0;
+
+        // Update DOM stats
+        document.getElementById('stat-total-students').textContent = totalStudents;
+        document.getElementById('stat-average-class').textContent = classAvg;
+        document.getElementById('stat-pass-rate').textContent = passRate + '%';
+
+        updateChart(labels, averages);
+    } catch (e) {
+        console.warn('Chart update skipped', e);
+    }
+}
+
+function initChart() {
+    const el = document.getElementById('dashboard-chart');
+    if (!el) return;
+    const ctx = el.getContext('2d');
+    dashboardChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Average Score',
+                data: [],
+                backgroundColor: 'rgba(59,130,246,0.85)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function updateChart(labels, data) {
+    if (!dashboardChart) return;
+    dashboardChart.data.labels = labels;
+    dashboardChart.data.datasets[0].data = data;
+    dashboardChart.update();
 }
 
 function renderTable() {

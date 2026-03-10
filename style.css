@@ -82,6 +82,32 @@ body {
     z-index: 90;
 }
 
+/* Dashboard cards */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+}
+.card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(245,247,250,0.9));
+    border-radius: 12px;
+    border: 1px solid rgba(16,24,40,0.06);
+    box-shadow: 0 6px 18px rgba(12,20,40,0.06);
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+}
+.card-header { margin-bottom: 0.6rem; }
+.card-header h3 { margin: 0; font-size: 1.05rem; }
+.card-sub { color: var(--text-light); font-size: 0.85rem; }
+.card-body { flex: 1; display: flex; align-items: center; justify-content: center; }
+.chart-card .card-body { padding: 0.5rem 0.8rem; }
+.stats-body { display:flex; gap:1rem; justify-content:space-between; width:100%; }
+.stat { text-align: center; flex:1; padding: 0.5rem; }
+.stat-value { font-size: 1.6rem; font-weight:700; color:var(--primary); }
+.stat-label { color:var(--text-light); font-size:0.85rem; }
+
 /* Table Design */
 .table-wrapper {
     background: var(--glass-bg);
@@ -92,6 +118,9 @@ body {
     overflow: auto;
     margin-top: 1rem;
 }
+
+/* Empty state centered */
+.empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; color:var(--text-light); }
 
 #student-table { width: 100%; border-collapse: collapse; }
 #student-table th { 

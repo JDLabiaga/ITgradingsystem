@@ -3,138 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grading System v2.0 | Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Passi City College | Grading System</title>
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js for dashboard visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="dashboard-active">
+<body>
 
-    <!-- Global Interactive Background -->
-    <div class="app-bg">
-        <div class="bg-circle c1"></div>
-        <div class="bg-circle c2"></div>
-        <div class="bg-circle c3"></div>
-    </div>
-
-    <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- ==================== MAIN DASHBOARD ==================== -->
-    <div id="dashboard-section" class="glass-container">
-
+    <section id="dashboard-section" style="display: flex;">
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
-                <div class="brand-wrapper">
-                    <img src="logo.jpg" alt="Logo" class="sidebar-logo">
-                    <div class="brand-text">
-                        <h2>GS <span>v2.0</span></h2>
-                        <small>Academic Management</small>
-                    </div>
+                <div class="brand">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>PCC GRADING</span>
                 </div>
+                <button id="sidebar-collapse-btn" class="sidebar-toggle">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
             </div>
 
             <div class="sidebar-menu">
-                <!-- Semester Section -->
                 <div class="menu-section">
-                    <div class="menu-label">
-                        <i class="fa-solid fa-calendar-days"></i>
-                        <span>Current Semester</span>
-                    </div>
-                    <div class="semester-selector-wrapper">
-                        <select id="semester-select" class="glass-select">
-                            <option value="">-- Select --</option>
+                    <div class="menu-label">Active Semester</div>
+                    <div class="semester-selector">
+                        <select id="semester-select">
+                            <option value="">Loading...</option>
                         </select>
-                        <button class="btn-icon-plus" id="add-semester-btn" title="Add Semester">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
+                        <button id="add-semester-btn" class="btn btn-icon btn-accent"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
 
-                <!-- Subjects Section -->
                 <div class="menu-section" id="subjects-section" style="display:none;">
-                    <div class="menu-label menu-label-collapsible" id="subjects-toggle">
-                        <span><i class="fa-solid fa-book"></i> Subjects</span>
+                    <div id="subjects-toggle" class="menu-label menu-label-collapsible">
+                        <span>SUBJECTS</span>
                         <i class="fa-solid fa-chevron-down menu-collapse-icon"></i>
                     </div>
-                    <div class="subject-list-wrapper" id="subject-list-wrapper">
+                    <div id="subject-list-wrapper" class="subject-list-wrapper">
                         <div id="subject-list" class="subject-list"></div>
-                        <button class="btn btn-add-subject" id="add-subject-btn">
-                            <i class="fa-solid fa-plus-circle"></i> Add Subject
+                        <button id="add-subject-btn" class="btn btn-sm btn-outline btn-full">
+                            <i class="fa-solid fa-plus"></i> Add Subject
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="sidebar-footer">
-                <div class="user-profile">
-                    <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="User" class="avatar">
-                    <div class="user-details">
-                        <span id="user-email">admin@system.com</span>
-                        <span class="status-badge">Online</span>
-                    </div>
+                <div class="user-info">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span id="user-email">admin@pcc.edu.ph</span>
                 </div>
             </div>
         </aside>
 
-        <!-- Sidebar Overlay (mobile) -->
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
         <!-- Main Content -->
-        <main class="main-content" id="main-content">
+        <main class="main-content">
             <header class="top-bar">
-                <div class="top-bar-left">
-                    <button class="sidebar-open-btn" id="sidebar-open-btn">
-                        <i class="fa-solid fa-bars-staggered"></i>
-                    </button>
-                    <h1 id="page-title">Overview</h1>
-                </div>
-                
+                <button id="sidebar-open-btn" class="sidebar-open-btn">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+                <h1 id="page-title">Dashboard</h1>
                 <div class="top-bar-actions">
-                    <button class="btn btn-primary btn-glow" id="add-student-btn" style="display:none;">
-                        <i class="fa-solid fa-user-plus"></i>
-                        <span>Add Student</span>
+                    <button id="add-student-btn" class="btn btn-primary" style="display:none;">
+                        <i class="fa-solid fa-user-plus"></i> <span>Add Student</span>
                     </button>
                 </div>
             </header>
 
             <div class="content-area">
-                <!-- Welcome/Empty State -->
-                <div id="empty-state" class="hero-state">
-                    <div class="hero-icon">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <!-- Dashboard Cards -->
+                <div class="dashboard-grid">
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3>Subject Averages</h3>
+                            <div class="card-sub">Live view of average scores per subject</div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="dashboard-chart" height="120"></canvas>
+                        </div>
                     </div>
-                    <h3>Welcome to Grading System</h3>
-                    <p>Select a semester from the sidebar to begin managing your student records.</p>
+                    <div class="card stats-card">
+                        <div class="card-header">
+                            <h3>Class Summary</h3>
+                            <div class="card-sub">Quick stats</div>
+                        </div>
+                        <div class="card-body stats-body">
+                            <div class="stat">
+                                <div class="stat-value" id="stat-total-students">0</div>
+                                <div class="stat-label">Students</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="stat-average-class">0</div>
+                                <div class="stat-label">Class Avg</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="stat-pass-rate">0%</div>
+                                <div class="stat-label">Pass Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <h3>No Semester Selected</h3>
+                    <p>Select or create a semester from the sidebar to view records.</p>
                 </div>
 
                 <!-- No Subjects State -->
-                <div id="no-subjects-state" class="hero-state" style="display:none;">
-                    <i class="fa-solid fa-book-bookmark"></i>
-                    <h3>Ready to teach?</h3>
-                    <p>Add your first subject to this semester to start recording grades.</p>
+                <div id="no-subjects-state" class="empty-state" style="display:none;">
+                    <i class="fa-solid fa-book"></i>
+                    <h3>No Subjects Yet</h3>
+                    <p>Add subjects in the sidebar before adding students.</p>
                 </div>
 
-                <!-- Student Table Section -->
-                <div id="table-section" class="table-container-glass" style="display:none;">
-                    <div class="table-header-controls">
-                        <div class="search-box">
+                <!-- Table View -->
+                <div id="table-section" class="table-section" style="display:none;">
+                    <div class="table-controls">
+                        <div class="table-search">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="search-input" placeholder="Search by name...">
+                            <input type="text" id="search-input" placeholder="Search student name...">
                         </div>
-                        <div class="filter-group">
-                            <select id="filter-year" class="glass-filter">
-                                <option value="">Year Level</option>
-                            </select>
-                            <select id="filter-section" class="glass-filter">
-                                <option value="">Section</option>
-                            </select>
+                        <div class="table-filters">
+                            <select id="filter-year" class="filter-select"><option value="">Year Level</option></select>
+                            <select id="filter-section" class="filter-select"><option value="">Section</option></select>
                         </div>
                     </div>
 
-                    <div class="table-responsive">
+                    <div class="table-wrapper">
                         <table id="student-table">
                             <thead>
                                 <tr id="table-header"></tr>
@@ -145,10 +150,124 @@
                 </div>
             </div>
         </main>
+    </section>
+
+    <!-- Modals -->
+    <div id="semester-modal" class="modal-overlay" data-close="semester-modal">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-calendar-plus"></i> New Semester</h3>
+                <button class="modal-close" data-close="semester-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <i class="fa-solid fa-tag"></i>
+                    <input type="text" id="semester-name" placeholder="e.g. 1st Semester 2023-2024">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" data-close="semester-modal">Cancel</button>
+                <button id="save-semester-btn" class="btn btn-primary">Create</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Modals (Kept structure but can be styled with glassmorphism in CSS) -->
-    <!-- ... [Include your existing modals here] ... -->
+    <!-- Student Modal -->
+    <div id="student-modal" class="modal-overlay" data-close="student-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus"></i> Add Student</h3>
+                <button class="modal-close" data-close="student-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="new-student-name" placeholder="Full Name">
+                </div>
+                <div class="student-meta-row">
+                    <div class="input-group">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <input type="text" id="new-student-year" placeholder="Year">
+                    </div>
+                    <div class="input-group">
+                        <i class="fa-solid fa-section"></i>
+                        <input type="text" id="new-student-section" placeholder="Section">
+                    </div>
+                </div>
+                <div class="grade-inputs-label">Initial Grades</div>
+                <div id="grade-inputs" class="grade-inputs"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" data-close="student-modal">Cancel</button>
+                <button id="save-student-btn" class="btn btn-primary">Save Student</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="edit-modal" class="modal-overlay" data-close="edit-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-pen"></i> Edit Student</h3>
+                <button class="modal-close" data-close="edit-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-student-id">
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="edit-student-name" placeholder="Full Name">
+                </div>
+                <div class="student-meta-row">
+                    <div class="input-group">
+                        <input type="text" id="edit-student-year" placeholder="Year">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="edit-student-section" placeholder="Section">
+                    </div>
+                </div>
+                <div id="edit-grade-inputs" class="grade-inputs"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="delete-student-btn" class="btn btn-danger">Delete</button>
+                <div class="modal-footer-right">
+                    <button class="btn btn-outline" data-close="edit-modal">Cancel</button>
+                    <button id="update-student-btn" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Modal -->
+    <div id="subject-modal" class="modal-overlay" data-close="subject-modal">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-book"></i> New Subject</h3>
+                <button class="modal-close" data-close="subject-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <i class="fa-solid fa-book-open"></i>
+                    <input type="text" id="new-subject-name" placeholder="Subject Name">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-subject-btn" class="btn btn-primary btn-full">Add Subject</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay" data-close="confirm-modal">
+        <div class="modal modal-sm">
+            <div class="modal-body" style="text-align: center; padding-top: 2rem;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;"></i>
+                <p id="confirm-message">Are you sure?</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn btn-outline" data-close="confirm-modal">Cancel</button>
+                <button id="confirm-delete-btn" class="btn btn-danger">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
