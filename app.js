@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://bjcqygaqqgknplzjbmiw.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Use your full key
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqY3F5Z2FxcWdrbnBsempibWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNDQ4NzMsImV4cCI6MjA4ODYyMDg3M30._I5BxEMAK7PtHc87fGhmlPJf31H3j525NqNoUjAgwR8'; // Use your full key
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = { id: '00000000-0000-0000-0000-000000000000' };
@@ -35,12 +35,22 @@ function bindEvents() {
 }
 
 async function loadSemesters() {
-    const { data } = await db.from('semesters').select('*').order('created_at', { ascending: false });
-    const select = $('semester-select');
-    select.innerHTML = '<option value="">Select Semester</option>';
-    data?.forEach(sem => {
-        select.innerHTML += `<option value="${sem.id}">${sem.name}</option>`;
-    });
+    try {
+        const { data, error, status } = await db.from('semesters').select('*').order('created_at', { ascending: false });
+        if (error) {
+            console.error('loadSemesters error', error, status);
+            showToast('Failed to load semesters: ' + (error.message || status), 'danger');
+            return;
+        }
+        const select = $('semester-select');
+        select.innerHTML = '<option value="">Select Semester</option>';
+        data?.forEach(sem => {
+            select.innerHTML += `<option value="${sem.id}">${sem.name}</option>`;
+        });
+    } catch (err) {
+        console.error('loadSemesters unexpected', err);
+        showToast('Unexpected error loading semesters', 'danger');
+    }
 }
 
 async function loadDashboard() {
