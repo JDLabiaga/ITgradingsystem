@@ -5,66 +5,94 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const TBL = { SEM: 'semesters3', SUB: 'subjects3', STU: 'students3', GRD: 'grades3' };
 const $ = (id) => document.getElementById(id);
 
-let currentSemesterId = null;
-let subjects = [];
-let students = [];
-let dashboardChart = null;
-let studentToDelete = null;
+let currentSemesterId = null, subjects = [], students = [], dashboardChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadSemesters();
     initChart();
+    loadSemesters();
     bindEvents();
 });
 
 function bindEvents() {
-    $('add-semester-btn').onclick = () => openModal('semester-modal');
-    $('add-subject-btn').onclick = () => openModal('subject-modal');
-    $('add-student-btn').onclick = openAddStudentModal;
+    // UI Toggles
+    $('mobile-menu-btn').onclick = () => $('sidebar').classList.add('open');
+    $('close-sidebar').onclick = () => $('sidebar').classList.remove('open');
     
-    $('save-semester-btn').onclick = addSemester;
-    $('save-subject-btn').onclick = addSubject;
-    $('save-student-btn').onclick = saveStudent;
-    $('confirm-delete-btn').onclick = executeDelete;
-
+    // Select Semester
     $('semester-select').onchange = (e) => {
         currentSemesterId = e.target.value;
         localStorage.setItem('selectedBatchId', currentSemesterId);
         loadDashboard();
     };
 
-    $('search-input').oninput = renderTable;
-    $('filter-year').onchange = renderTable;
-    $('filter-section').onchange = renderTable;
+    // Modal Triggers
+    $('add-semester-btn').onclick = () => openModal('semester-modal');
+    $('add-subject-btn').onclick = () => openModal('subject-modal');
+    $('add-student-btn').onclick = () => {
+        $('grade-inputs').innerHTML = subjects.map(s => `
+            <div class="grade-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label style="font-size:0.8rem">${s.name}</label>
+                <input type="number" step="0.1" class="grade-input tech-input" style="width:80px; margin:0" data-sub-id="${s.id}">
+            </div>
+        `).join('');
+        openModal('student-modal');
+    };
 
-    document.querySelectorAll('[data-close]').forEach(btn => {
-        btn.onclick = (e) => closeModal(e.target.dataset.close);
-    });
+    // Save Actions
+    $('save-semester-btn').onclick = async () => {
+        const name = $('semester-name').value;
+        if(name) {
+            await db.from(TBL.SEM).insert([{ name }]);
+            location.reload();
+        }
+    };
+
+    $('save-subject-btn').onclick = async () => {
+        const name = $('new-subject-name').value;
+        if(name) {
+            await db.from(TBL.SUB).insert([{ name, semester_id: currentSemesterId }]);
+            closeModal('subject-modal');
+            loadDashboard();
+        }
+    };
+
+    $('save-student-btn').onclick = async () => {
+        const name = $('new-student-name').value;
+        if(!name) return;
+
+        const { data: student } = await db.from(TBL.STU).insert([{
+            full_name: name, semester_id: currentSemesterId,
+            year_level: $('new-student-year').value, section: $('new-student-section').value
+        }]).select().single();
+
+        if(student) {
+            const grades = Array.from(document.querySelectorAll('.grade-input')).map(i => ({
+                student_id: student.id, subject_id: i.dataset.subId,
+                score: i.value ? parseFloat(i.value) : null
+            })).filter(g => g.score !== null);
+
+            if(grades.length) await db.from(TBL.GRD).insert(grades);
+            closeModal('student-modal');
+            loadStudents(); // Refresh the table
+        }
+    };
 }
 
 async function loadSemesters() {
     const { data } = await db.from(TBL.SEM).select('*').order('created_at', { ascending: false });
-    const select = $('semester-select');
-    select.innerHTML = '<option value="">Select Batch</option>';
-    data?.forEach(sem => select.innerHTML += `<option value="${sem.id}">${sem.name}</option>`);
-
+    const sel = $('semester-select');
+    sel.innerHTML = '<option value="">Select Batch</option>' + data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    
     const saved = localStorage.getItem('selectedBatchId');
-    if (saved) {
-        select.value = saved;
+    if(saved && data.some(s => s.id === saved)) {
+        sel.value = saved;
         currentSemesterId = saved;
         loadDashboard();
     }
 }
 
 async function loadDashboard() {
-    if (!currentSemesterId) {
-        $('empty-state').style.display = 'block';
-        $('table-section').style.display = 'none';
-        $('subjects-section').style.display = 'none';
-        $('add-student-btn').style.display = 'none';
-        return;
-    }
-    
+    if(!currentSemesterId) return;
     $('empty-state').style.display = 'none';
     $('table-section').style.display = 'block';
     $('subjects-section').style.display = 'block';
@@ -72,136 +100,61 @@ async function loadDashboard() {
 
     const { data: subData } = await db.from(TBL.SUB).select('*').eq('semester_id', currentSemesterId);
     subjects = subData || [];
-    renderSubjectList();
-    await loadStudents();
+    
+    $('subject-list').innerHTML = subjects.map(s => `<div class="stat-tile" style="padding:10px; margin-bottom:5px; font-size:0.8rem"><i class="fa-solid fa-book"></i> ${s.name}</div>`).join('');
+    
+    loadStudents();
 }
 
 async function loadStudents() {
-    const { data: studentList } = await db.from(TBL.STU).select('*').eq('semester_id', currentSemesterId);
-    if (!studentList?.length) { students = []; renderTable(); return; }
+    const { data: stu } = await db.from(TBL.STU).select('*').eq('semester_id', currentSemesterId);
+    if(!stu?.length) { students = []; renderTable(); return; }
 
-    const { data: gradeData } = await db.from(TBL.GRD).select('*').in('student_id', studentList.map(s => s.id));
-    students = studentList.map(s => ({
+    const { data: grd } = await db.from(TBL.GRD).select('*').in('student_id', stu.map(s => s.id));
+    students = stu.map(s => ({
         ...s,
-        grades: (gradeData || []).filter(g => g.student_id === s.id)
+        grades: (grd || []).filter(g => g.student_id === s.id)
     }));
-    updateFilterOptions();
     renderTable();
 }
 
 function renderTable() {
-    const searchTerm = $('search-input').value.toLowerCase();
-    const year = $('filter-year').value;
-    const sec = $('filter-section').value;
+    // Dynamic Header
+    $('table-header').innerHTML = '<th>Student Profile</th>' + subjects.map(s => `<th>${s.name}</th>`).join('') + '<th>GWA</th>';
 
-    const filtered = students.filter(s => 
-        s.full_name.toLowerCase().includes(searchTerm) &&
-        (!year || s.year_level === year) &&
-        (!sec || s.section === sec)
-    );
-
-    $('table-header').innerHTML = '<th>User Record</th>' + 
-        subjects.map(sub => `<th>${sub.name}</th>`).join('') + '<th>GWA</th><th>Action</th>';
-
-    $('table-body').innerHTML = filtered.map(s => {
+    // Body
+    $('table-body').innerHTML = students.map(s => {
         let sum = 0, count = 0;
         const cells = subjects.map(sub => {
             const g = s.grades.find(g => g.subject_id === sub.id);
-            const val = g?.score || '-';
-            if (val !== '-') { sum += parseFloat(val); count++; }
-            return `<td>${val}</td>`;
+            if(g) { sum += g.score; count++; }
+            return `<td>${g ? g.score : '-'}</td>`;
         }).join('');
 
         const gwa = count > 0 ? (sum / count).toFixed(2) : '0.00';
         return `<tr>
-            <td><strong>${s.full_name}</strong><br><small>${s.year_level}-${s.section}</small></td>
+            <td><strong>${s.full_name}</strong><br><small>${s.year_level} - ${s.section}</small></td>
             ${cells}
-            <td><span class="badge ${gwa <= 3.0 && gwa > 0 ? 'pass' : 'fail'}">${gwa}</span></td>
-            <td><button class="btn-delete-outline" onclick="studentToDelete='${s.id}';openModal('confirm-modal')"><i class="fa-solid fa-trash"></i></button></td>
+            <td><span class="stat-value" style="font-size:1rem; color:${gwa <= 3.0 ? '#2ed573' : '#ff4757'}">${gwa}</span></td>
         </tr>`;
     }).join('');
-    updateStats(filtered);
+
+    updateStats();
 }
 
-async function saveStudent() {
-    const name = $('new-student-name').value;
-    if(!name) return;
-
-    const { data: student } = await db.from(TBL.STU).insert([{ 
-        full_name: name, semester_id: currentSemesterId,
-        year_level: $('new-student-year').value, section: $('new-student-section').value
-    }]).select().single();
-
-    if (student) {
-        const grades = Array.from(document.querySelectorAll('.subject-grade-input')).map(i => ({
-            student_id: student.id, subject_id: i.dataset.subjectId,
-            score: i.value ? parseFloat(i.value) : null
-        })).filter(g => g.score !== null);
-
-        if (grades.length) await db.from(TBL.GRD).insert(grades);
-        closeModal('student-modal');
-        loadStudents();
-    }
-}
-
-async function addSemester() {
-    const name = $('semester-name').value;
-    if (name) {
-        await db.from(TBL.SEM).insert([{ name }]);
-        $('semester-name').value = '';
-        closeModal('semester-modal');
-        loadSemesters();
-    }
-}
-
-async function addSubject() {
-    const name = $('new-subject-name').value;
-    if (name) {
-        await db.from(TBL.SUB).insert([{ name, semester_id: currentSemesterId }]);
-        $('new-subject-name').value = '';
-        closeModal('subject-modal');
-        loadDashboard();
-    }
-}
-
-async function executeDelete() {
-    await db.from(TBL.STU).delete().eq('id', studentToDelete);
-    closeModal('confirm-modal');
-    loadStudents();
-}
-
-function openAddStudentModal() {
-    $('grade-inputs').innerHTML = subjects.map(sub => `
-        <div class="input-group-tech">
-            <label>${sub.name}</label>
-            <input type="number" step="0.1" class="subject-grade-input tech-input" data-subject-id="${sub.id}">
-        </div>
-    `).join('');
-    openModal('student-modal');
-}
-
-function updateStats(data) {
-    $('stat-total-students').textContent = data.length;
-    const gwas = data.map(s => {
-        const sc = s.grades.map(g => g.score).filter(v => v);
-        return sc.length ? sc.reduce((a,b)=>a+b,0)/sc.length : null;
-    }).filter(v => v);
-    const avg = gwas.length ? (gwas.reduce((a,b)=>a+b,0)/gwas.length).toFixed(2) : '0.00';
-    $('stat-average-class').textContent = avg;
-    $('stat-pass-rate').textContent = gwas.length ? Math.round((gwas.filter(v=>v<=3.0).length/gwas.length)*100)+'%' : '0%';
-}
-
-function initChart() {
-    dashboardChart = new Chart($('dashboard-chart'), {
-        type: 'line',
-        data: { labels: [], datasets: [{ label: 'Avg', data: [], borderColor: '#00f2ff', tension: 0.4 }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true, min: 1, max: 5 } } }
-    });
-}
-
-function renderSubjectList() {
-    $('subject-list').innerHTML = subjects.map(s => `<div class="badge pass">${s.name}</div>`).join(' ');
+function updateStats() {
+    $('stat-total-students').textContent = students.length;
+    // Additional stat logic here...
 }
 
 function openModal(id) { $(id).classList.add('active'); }
-function closeModal(id) { $(id).classList.remove('active'); }
+function closeModal(id) { $(id).classList.remove('active'); document.querySelectorAll('.tech-input').forEach(i => i.value = ''); }
+
+function initChart() {
+    const ctx = $('dashboard-chart').getContext('2d');
+    dashboardChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['M1', 'M2', 'M3', 'M4'], datasets: [{ label: 'Batch Performance', data: [2.5, 2.1, 1.8, 1.5], borderColor: '#00f2ff', tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true, min: 1, max: 5 } } }
+    });
+}
