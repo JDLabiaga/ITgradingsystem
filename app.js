@@ -196,15 +196,28 @@ async function updateStudent() {
     loadStudents();
 }
 
+// --- Replace your executeDelete function with this ---
 async function executeDelete() {
-    await db.from('students2').delete().eq('id', studentToDelete);
-    closeModal('confirm-modal');
-    closeModal('edit-modal');
-    showToast('Deleted', 'success');
-    loadStudents();
+    if (!studentToDelete) return;
+
+    try {
+        const { error } = await db.from('students2').delete().eq('id', studentToDelete);
+        
+        if (error) throw error;
+
+        showToast('Student Deleted', 'success');
+        closeModal('confirm-modal');
+        closeModal('edit-modal'); // Close both in case delete was triggered from edit
+        
+        studentToDelete = null; // Clear the ID
+        await loadStudents();   // Refresh the table and stats
+    } catch (err) {
+        console.error(err);
+        showToast('Error deleting student', 'danger');
+    }
 }
 
-// --- UI RENDERING (1.0 - 5.0 Logic) ---
+// --- Replace your renderTable function to ensure the button works ---
 function renderTable() {
     const searchTerm = $('search-input').value.toLowerCase();
     const year = $('filter-year').value;
@@ -216,10 +229,12 @@ function renderTable() {
         (!sec || s.section === sec)
     );
 
+    // Update Header
     $('table-header').innerHTML = '<th>Student Information</th>' + 
         subjects.map(sub => `<th class="text-center">${sub.name}</th>`).join('') + 
-        '<th>GWA</th><th></th>';
+        '<th>GWA</th><th>Action</th>';
 
+    // Update Body
     $('table-body').innerHTML = filtered.map(s => {
         let sum = 0, count = 0;
         const cells = subjects.map(sub => {
@@ -232,17 +247,17 @@ function renderTable() {
         const gwa = count > 0 ? (sum / count).toFixed(2) : '0.00';
         const isPass = parseFloat(gwa) > 0 && parseFloat(gwa) <= 3.0;
 
-            return `
-                <tr>
-                    <td><strong>${s.full_name}</strong><br><small>${s.year_level || ''} ${s.section || ''}</small></td>
-                    ${cells}
-                    <td class="text-center"><span class="badge ${isPass ? 'pass' : 'fail'}">${gwa}</span></td>
-                    <td class="text-center">
-                        <button class="btn-icon text-danger" onclick="studentToDelete='${s.id}'; openModal('confirm-modal')">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
+        return `
+            <tr>
+                <td><strong>${s.full_name}</strong><br><small>${s.year_level || ''} ${s.section || ''}</small></td>
+                ${cells}
+                <td class="text-center"><span class="badge ${isPass ? 'pass' : 'fail'}">${gwa}</span></td>
+                <td class="text-center">
+                    <button class="btn-icon text-danger" onclick="studentToDelete='${s.id}'; openModal('confirm-modal')">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
     }).join('');
 
     updateStats(filtered);
