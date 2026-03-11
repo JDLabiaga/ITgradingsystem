@@ -3,50 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Grading System | Portal</title>
+    <title>IT Grading System | Pro Portal</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="it-theme">
     <div id="toast-container"></div>
 
-    <!-- SIDEBAR -->
+    <!-- SIDEBAR (Right Aligned via CSS) -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand">
-                <i class="fa-solid fa-code-branch"></i> 
-                <span>IT PORTAL</span>
+                <i class="fa-solid fa-microchip"></i> 
+                <span>PRO PORTAL</span>
             </div>
-            <button class="btn-icon" id="close-sidebar"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="btn-icon" id="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <!-- Semester Selection -->
         <div class="menu-section">
-            <label class="menu-label">Batch / Semester</label>
+            <label class="menu-label">Batch Management</label>
             <div class="semester-controls-wrapper">
-                <!-- Pointing to Semester Select (v3 logic in app.js) -->
-                <select id="semester-select" class="tech-input-sm"></select>
+                <select id="semester-select" class="tech-select"></select>
                 <div class="semester-actions">
-                    <button class="btn-icon btn-neon" id="add-semester-btn" title="New Batch">
-                        <i class="fa-solid fa-plus"></i>
+                    <button class="btn-neon" id="add-semester-btn" title="New Batch">
+                        <i class="fa-solid fa-plus"></i> NEW
                     </button>
-                    <button id="delete-semester-btn" onclick="deleteSemester()" class="btn-icon btn-delete" title="Remove Batch">
+                    <button id="delete-semester-btn" onclick="deleteSemester()" class="btn-delete-outline" title="Remove Batch">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Subjects -->
         <div class="menu-section" id="subjects-section" style="display:none;">
-            <label class="menu-label">MODULES <i class="fa-solid fa-microchip"></i></label>
-            <div id="subject-list" class="subject-pills-container">
-                <!-- Injected via app.js -->
-            </div>
-            <button class="btn btn-outline-neon btn-sm sidebar-add-btn" id="add-subject-btn">
+            <label class="menu-label">Active Modules</label>
+            <div id="subject-list" class="subject-pills-container"></div>
+            <button class="btn-outline-neon" id="add-subject-btn">
                 <i class="fa-solid fa-terminal"></i> Add Module
             </button>
         </div>
@@ -59,80 +53,56 @@
         <header class="top-bar">
             <div class="header-left">
                 <button class="mobile-toggle" id="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
-                <div class="breadcrumb">Terminal / <span>Dashboard</span></div>
+                <div class="breadcrumb">SYSTEM / <span>DASHBOARD</span></div>
             </div>
             <div class="header-actions">
-                <button class="btn btn-outline-tech btn-sm hide-mobile" id="export-pdf-btn">
-                    <i class="fa-solid fa-download"></i> Reports
-                </button>
-                <button class="btn btn-neon" id="add-student-btn" style="display:none;">
-                    <i class="fa-solid fa-plus"></i> <span>Enroll Student</span>
+                <button class="btn-neon" id="add-student-btn" style="display:none;">
+                    <i class="fa-solid fa-user-plus"></i> <span>Enroll Student</span>
                 </button>
             </div>
         </header>
 
         <div class="content-area">
-            <!-- EMPTY STATE (Modernized) -->
             <div id="empty-state" class="empty-state-tech">
-                <div class="pulse-icon">
-                    <i class="fa-solid fa-terminal"></i>
-                </div>
-                <h3>System Ready</h3>
-                <p>Select a semester batch to initialize data visualization.</p>
+                <div class="pulse-icon"><i class="fa-solid fa-terminal"></i></div>
+                <h3>System Standby</h3>
+                <p>Select or create a batch to initialize the data stream.</p>
             </div>
 
-            <!-- DASHBOARD CONTENT -->
             <div id="table-section" style="display:none;">
                 <div class="dashboard-grid">
-                    <!-- CHART CARD -->
-                    <div class="card tech-card chart-card">
-                        <div class="card-header"><h3><i class="fa-solid fa-chart-bar"></i> Performance Metrics</h3></div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="dashboard-chart"></canvas>
-                            </div>
-                        </div>
+                    <div class="card chart-card">
+                        <div class="card-header"><h3><i class="fa-solid fa-chart-line"></i> Performance Analytics</h3></div>
+                        <div class="chart-container"><canvas id="dashboard-chart"></canvas></div>
                     </div>
 
-                    <!-- TECH STATS -->
                     <div class="stats-container-grid">
                         <div class="stat-tile">
-                            <div class="stat-info">
-                                <span class="stat-label">Headcount</span>
-                                <div class="stat-value" id="stat-total-students">0</div>
-                            </div>
-                            <i class="fa-solid fa-user-group"></i>
+                            <span class="stat-label">Headcount</span>
+                            <div class="stat-value" id="stat-total-students">0</div>
                         </div>
                         <div class="stat-tile accent">
-                            <div class="stat-info">
-                                <span class="stat-label">Batch GWA</span>
-                                <div class="stat-value" id="stat-average-class">0.00</div>
-                            </div>
-                            <i class="fa-solid fa-gauge-high"></i>
+                            <span class="stat-label">Batch GWA</span>
+                            <div class="stat-value" id="stat-average-class">0.00</div>
                         </div>
                         <div class="stat-tile success">
-                            <div class="stat-info">
-                                <span class="stat-label">Success Rate</span>
-                                <div class="stat-value" id="stat-pass-rate">0%</div>
-                            </div>
-                            <i class="fa-solid fa-bolt"></i>
+                            <span class="stat-label">Success Rate</span>
+                            <div class="stat-value" id="stat-pass-rate">0%</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- SEARCH & FILTERS -->
                 <div class="controls-row-tech">
                     <div class="search-box-tech">
-                        <i class="fa-solid fa-terminal"></i>
-                        <input type="text" id="search-input" placeholder="Search entries...">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="search-input" placeholder="Query records...">
                     </div>
                     <div class="filter-group">
-                        <select id="filter-year" class="tech-select"><option value="">All Years</option></select>
-                        <select id="filter-section" class="tech-select"><option value="">Sections</option></select>
+                        <select id="filter-year" class="tech-select-sm"><option value="">All Years</option></select>
+                        <select id="filter-section" class="tech-select-sm"><option value="">Sections</option></select>
                     </div>
                 </div>
 
-                <!-- DATA TABLE (Modern Tech Look) -->
                 <div class="table-container-tech">
                     <table id="student-table" class="tech-table">
                         <thead><tr id="table-header"></tr></thead>
@@ -143,23 +113,32 @@
         </div>
     </main>
 
-    <!-- MODALS (Using Tech Classes) -->
-    <!-- New Semester Modal -->
+    <!-- MODALS -->
     <div class="modal-overlay" id="semester-modal">
         <div class="modal tech-modal">
-            <h3><i class="fa-solid fa-folder-plus"></i> Initialize New Batch</h3>
-            <input type="text" id="semester-name" class="tech-input" placeholder="Batch Name (e.g. BSIT-1A 2026)">
+            <h3>Initialize Batch</h3>
+            <input type="text" id="semester-name" class="tech-input" placeholder="e.g. BSIT-3A 2026">
             <div class="modal-footer">
-                <button class="btn btn-neon" id="save-semester-btn">Create</button>
-                <button class="btn btn-text" data-close="semester-modal">Cancel</button>
+                <button class="btn-neon" id="save-semester-btn">Create</button>
+                <button class="btn-text" data-close="semester-modal">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Student Enrollment Modal (Streamlined for IT) -->
+    <div class="modal-overlay" id="subject-modal">
+        <div class="modal tech-modal">
+            <h3>Add Module</h3>
+            <input type="text" id="new-subject-name" class="tech-input" placeholder="e.g. Network Security">
+            <div class="modal-footer">
+                <button class="btn-neon" id="save-subject-btn">Add</button>
+                <button class="btn-text" data-close="subject-modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="student-modal">
         <div class="modal tech-modal wide">
-            <h3><i class="fa-solid fa-user-plus"></i> Student Enrollment</h3>
+            <h3>Student Enrollment</h3>
             <div class="input-grid">
                 <input type="text" id="new-student-name" class="tech-input" placeholder="Full Name">
                 <div class="flex-row">
@@ -167,51 +146,23 @@
                     <input type="text" id="new-student-section" class="tech-input" placeholder="Section">
                 </div>
             </div>
-            <label class="tech-label">Module Grading</label>
+            <label class="tech-label">Module Grades</label>
             <div id="grade-inputs" class="tech-scroll-area"></div>
             <div class="modal-footer">
-                <button class="btn btn-neon" id="save-student-btn">Push Record</button>
-                <button class="btn btn-text" data-close="student-modal">Discard</button>
+                <button class="btn-neon" id="save-student-btn">Push to DB</button>
+                <button class="btn-text" data-close="student-modal">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Edit Student Modal -->
-    <div class="modal-overlay" id="edit-modal">
-        <div class="modal tech-modal wide">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-pen-to-square"></i> Modify Record</h3>
-                <button class="btn-icon btn-delete" id="delete-student-btn" onclick="openModal('confirm-modal')">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
-            </div>
-            <input type="hidden" id="edit-student-id">
-            <div class="input-grid">
-                <input type="text" id="edit-student-name" class="tech-input">
-                <div class="flex-row">
-                    <input type="text" id="edit-student-year" class="tech-input">
-                    <input type="text" id="edit-student-section" class="tech-input">
-                </div>
-            </div>
-            <div id="edit-grade-inputs" class="tech-scroll-area"></div>
-            <div class="modal-footer">
-                <button class="btn btn-neon" id="update-student-btn">Update</button>
-                <button class="btn btn-text" data-close="edit-modal">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirmation Modal -->
     <div class="modal-overlay" id="confirm-modal">
         <div class="modal tech-modal text-center">
-            <div class="warn-icon-tech">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h3>Critical: Confirm Deletion</h3>
-            <p>This will permanently purge this record from the database.</p>
-            <div class="modal-footer flex-center">
-                <button id="confirm-delete-btn" class="btn btn-danger" onclick="executeDelete()">Confirm Purge</button>
-                <button class="btn btn-text" data-close="confirm-modal">Abort</button>
+            <i class="fa-solid fa-triangle-exclamation warn-icon"></i>
+            <h3>Confirm Deletion</h3>
+            <p>This action cannot be undone.</p>
+            <div class="modal-footer">
+                <button id="confirm-delete-btn" class="btn-danger">Delete</button>
+                <button class="btn-text" data-close="confirm-modal">Abort</button>
             </div>
         </div>
     </div>
