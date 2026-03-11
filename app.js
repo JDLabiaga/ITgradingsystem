@@ -11,11 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSemesters();
     initChart();
     
+    // Sidebar Toggles
     $('mobile-menu-btn').onclick = () => $('sidebar').classList.add('open');
     $('close-sidebar').onclick = () => $('sidebar').classList.remove('open');
     $('sidebar-overlay').onclick = () => $('sidebar').classList.remove('open');
 
-    $('semester-select').onchange = (e) => { currentSemesterId = e.target.value; loadDashboard(); };
+    $('semester-select').onchange = (e) => { 
+        currentSemesterId = e.target.value; 
+        loadDashboard(); 
+        if(window.innerWidth < 1024) $('sidebar').classList.remove('open');
+    };
+
     $('add-semester-btn').onclick = () => openModal('semester-modal');
     $('add-subject-btn').onclick = () => openModal('subject-modal');
     
@@ -33,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     $('delete-semester-btn').onclick = async () => {
-        if(currentSemesterId && confirm("Delete entire batch?")) {
+        if(currentSemesterId && confirm("Wipe this batch data?")) {
             await db.from(TBL.SEM).delete().eq('id', currentSemesterId);
             location.reload();
         }
@@ -41,9 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('add-student-btn').onclick = () => {
         $('grade-inputs').innerHTML = subjects.map(s => `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px">
                 <label style="font-size:0.8rem">${s.name}</label>
-                <input type="number" step="0.1" class="grade-input tech-input" style="width:80px" data-sub-id="${s.id}">
+                <input type="number" step="0.1" class="grade-input tech-input" style="width:70px; margin:0" data-sub-id="${s.id}">
             </div>
         `).join('');
         openModal('student-modal');
@@ -106,7 +112,7 @@ function renderTable(filter = '') {
         }).join('');
         const gwa = count > 0 ? (sum/count).toFixed(2) : '0.00';
         totalGWA += parseFloat(gwa);
-        return `<tr><td><b>${s.full_name}</b><br><small>${s.section}</small></td>${cells}<td>${gwa}</td><td><button class="btn-danger-icon" onclick="deleteStudent('${s.id}')"><i class="fa-solid fa-trash-can"></i></button></td></tr>`;
+        return `<tr><td><b>${s.full_name}</b><br><small>${s.section}</small></td>${cells}<td><b>${gwa}</b></td><td><button class="btn-danger-icon" onclick="deleteStudent('${s.id}')"><i class="fa-solid fa-trash-can"></i></button></td></tr>`;
     }).join('');
 
     $('stat-total-students').textContent = filtered.length;
@@ -115,7 +121,28 @@ function renderTable(filter = '') {
 }
 
 function initChart() {
-    chart = new Chart($('dashboard-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'GWA Trend', data: [], borderColor: '#00f2ff', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true, min: 1, max: 5 } } } });
+    chart = new Chart($('dashboard-chart'), { 
+        type: 'line', 
+        data: { labels: [], datasets: [{ 
+            label: 'Student Performance', 
+            data: [], 
+            borderColor: '#00f2ff', 
+            backgroundColor: 'rgba(0, 242, 255, 0.1)',
+            fill: true,
+            borderWidth: 3,
+            tension: 0.4,
+            pointBackgroundColor: '#00f2ff'
+        }] }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+                y: { reverse: true, min: 1, max: 5, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                x: { grid: { display: false }, ticks: { color: '#64748b' } }
+            },
+            plugins: { legend: { display: false } }
+        } 
+    });
 }
 
 function updateChart(data) {

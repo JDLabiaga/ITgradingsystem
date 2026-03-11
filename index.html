@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Grading | Pro Portal</title>
+    <title>IT Grading System | Pro Portal</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="it-theme">
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand"><i class="fa-solid fa-microchip"></i> <span>PRO PORTAL</span></div>
@@ -18,10 +17,10 @@
         </div>
 
         <div class="menu-section">
-            <label class="menu-label">Batch Control</label>
+            <label class="menu-label">Batch Management</label>
             <div class="input-group-tech">
                 <select id="semester-select" class="tech-select"></select>
-                <button class="btn-danger-icon" id="delete-semester-btn"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn-danger-icon" id="delete-semester-btn"><i class="fa-solid fa-trash-can"></i></button>
             </div>
             <button class="btn-neon w-100" id="add-semester-btn">NEW BATCH</button>
         </div>
@@ -35,7 +34,6 @@
 
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    <!-- Main Content -->
     <main class="main-content">
         <header class="top-bar">
             <div class="header-left">
@@ -48,7 +46,7 @@
         <div id="empty-state" class="empty-state-tech">
             <div class="pulse-icon"><i class="fa-solid fa-terminal"></i></div>
             <h3>System Standby</h3>
-            <p>Select or create a batch to initialize data.</p>
+            <p>Initialize a batch to stream data.</p>
         </div>
 
         <div id="table-section" style="display:none;">
@@ -63,7 +61,7 @@
             <div class="controls-row">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="search-input" placeholder="Filter records...">
+                    <input type="text" id="search-input" placeholder="Filter student name...">
                 </div>
             </div>
 
@@ -77,11 +75,9 @@
     </main>
 
     <!-- Modals -->
-    <div class="modal-overlay" id="semester-modal"><div class="modal"><h3>Initialize Batch</h3><input type="text" id="semester-name" class="tech-input" placeholder="e.g. 1st Sem 2026"><div class="modal-btns"><button class="btn-neon" id="save-semester-btn">Save</button><button class="btn-text" onclick="closeModal('semester-modal')">Cancel</button></div></div></div>
-    
-    <div class="modal-overlay" id="subject-modal"><div class="modal"><h3>New Module</h3><input type="text" id="new-subject-name" class="tech-input" placeholder="e.g. Programming 1"><div class="modal-btns"><button class="btn-neon" id="save-subject-btn">Save</button><button class="btn-text" onclick="closeModal('subject-modal')">Cancel</button></div></div></div>
-
-    <div class="modal-overlay" id="student-modal"><div class="modal"><h3>Enroll Student</h3><input type="text" id="new-student-name" class="tech-input" placeholder="Full Name"><input type="text" id="new-student-section" class="tech-input" placeholder="Section"><div id="grade-inputs" class="grade-scroll"></div><div class="modal-btns"><button class="btn-neon" id="save-student-btn">Save</button><button class="btn-text" onclick="closeModal('student-modal')">Cancel</button></div></div></div>
+    <div class="modal-overlay" id="semester-modal"><div class="modal"><h3>New Batch</h3><input type="text" id="semester-name" class="tech-input" placeholder="e.g. 1st Sem 2026"><div class="modal-btns"><button class="btn-neon" id="save-semester-btn">Create</button><button class="btn-text" onclick="closeModal('semester-modal')">Cancel</button></div></div></div>
+    <div class="modal-overlay" id="subject-modal"><div class="modal"><h3>New Module</h3><input type="text" id="new-subject-name" class="tech-input" placeholder="e.g. Data Structures"><div class="modal-btns"><button class="btn-neon" id="save-subject-btn">Add</button><button class="btn-text" onclick="closeModal('subject-modal')">Cancel</button></div></div></div>
+    <div class="modal-overlay" id="student-modal"><div class="modal"><h3>Student Enrollment</h3><input type="text" id="new-student-name" class="tech-input" placeholder="Full Name"><input type="text" id="new-student-section" class="tech-input" placeholder="Section"><div id="grade-inputs" class="grade-scroll"></div><div class="modal-btns"><button class="btn-neon" id="save-student-btn">Push to DB</button><button class="btn-text" onclick="closeModal('student-modal')">Cancel</button></div></div></div>
 
     <script src="app.js"></script>
 </body>
