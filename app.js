@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
-    // Mobile Sidebar Toggle
     $('mobile-menu-btn').onclick = () => {
         $('sidebar').classList.add('open');
         $('sidebar-overlay').style.display = 'block';
@@ -32,7 +31,6 @@ function bindEvents() {
     $('close-sidebar').onclick = closeSidebar;
     $('sidebar-overlay').onclick = closeSidebar;
 
-    // Semester Change
     $('semester-select').onchange = (e) => {
         currentSemesterId = e.target.value;
         localStorage.setItem('selectedSemesterId', currentSemesterId || '');
@@ -40,24 +38,20 @@ function bindEvents() {
         if(window.innerWidth <= 1024) closeSidebar();
     };
 
-    // Modal Triggers
     $('add-semester-btn').onclick = () => openModal('semester-modal');
     $('add-subject-btn').onclick = () => openModal('subject-modal');
     $('add-student-btn').onclick = openAddStudentModal;
 
-    // Save/Action Buttons
     $('save-semester-btn').onclick = addSemester;
     $('save-subject-btn').onclick = addSubject;
     $('save-student-btn').onclick = saveStudent;
     $('update-student-btn').onclick = updateStudent;
     $('confirm-delete-btn').onclick = executeDelete;
 
-    // Search & Filters
     $('search-input').oninput = renderTable;
     $('filter-year').onchange = renderTable;
     $('filter-section').onchange = renderTable;
 
-    // Global Modal Closer
     document.addEventListener('click', (e) => {
         if (e.target.dataset.close) closeModal(e.target.dataset.close);
         if (e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
@@ -65,7 +59,6 @@ function bindEvents() {
 }
 
 // --- DATA FETCHING ---
-
 async function loadSemesters() {
     const { data } = await db.from('semesters2').select('*').order('created_at', { ascending: false });
     const select = $('semester-select');
@@ -126,13 +119,12 @@ async function loadStudents() {
 }
 
 // --- STUDENT LOGIC ---
-
 function openAddStudentModal() {
     const container = $('grade-inputs');
     container.innerHTML = subjects.map(sub => `
         <div class="input-group" style="margin-bottom:10px;">
             <label style="font-size:0.75rem; color:var(--primary);">${sub.name}</label>
-            <input type="number" class="subject-grade-input glass-input-table" data-subject-id="${sub.id}" placeholder="Enter Grade" style="width:100%">
+            <input type="number" step="0.1" class="subject-grade-input glass-input-table" data-subject-id="${sub.id}" placeholder="1.0 - 5.0" style="width:100%">
         </div>
     `).join('');
     openModal('student-modal');
@@ -155,7 +147,6 @@ async function saveStudent() {
         })).filter(g => g.score !== null);
 
         if (grades.length > 0) await db.from('grades2').insert(grades);
-        
         closeModal('student-modal');
         showToast('Student Added', 'success');
         loadStudents();
@@ -176,7 +167,7 @@ function openEditModal(id) {
         return `
             <div class="input-group" style="margin-bottom:10px;">
                 <label style="font-size:0.75rem; color:var(--primary);">${sub.name}</label>
-                <input type="number" class="edit-subject-grade-input glass-input-table" data-subject-id="${sub.id}" value="${grade ? grade.score : ''}" style="width:100%">
+                <input type="number" step="0.1" class="edit-subject-grade-input glass-input-table" data-subject-id="${sub.id}" value="${grade ? grade.score : ''}" style="width:100%">
             </div>`;
     }).join('');
 
@@ -213,8 +204,7 @@ async function executeDelete() {
     loadStudents();
 }
 
-// --- UI RENDERING ---
-
+// --- UI RENDERING (1.0 - 5.0 Logic) ---
 function renderTable() {
     const searchTerm = $('search-input').value.toLowerCase();
     const year = $('filter-year').value;
@@ -240,11 +230,13 @@ function renderTable() {
         }).join('');
 
         const gwa = count > 0 ? (sum / count).toFixed(2) : '0.00';
+        const isPass = parseFloat(gwa) > 0 && parseFloat(gwa) <= 3.0;
+
         return `
             <tr>
                 <td><strong>${s.full_name}</strong><br><small>${s.year_level || ''} ${s.section || ''}</small></td>
                 ${cells}
-                <td class="text-center"><span class="badge ${parseFloat(gwa) >= 75 || (parseFloat(gwa) <= 3.0 && parseFloat(gwa) > 0) ? 'pass' : 'fail'}">${gwa}</span></td>
+                <td class="text-center"><span class="badge ${isPass ? 'pass' : 'fail'}">${gwa}</span></td>
                 <td class="text-center"><button class="btn-icon" onclick="openEditModal('${s.id}')"><i class="fa-solid fa-ellipsis-vertical"></i></button></td>
             </tr>`;
     }).join('');
@@ -256,24 +248,23 @@ function updateStats(data) {
     const total = data.length;
     $('stat-total-students').textContent = total;
     
-    let allSum = 0, allCount = 0, passing = 0;
+    let allSum = 0, allCount = 0, passingCount = 0;
     data.forEach(s => {
         let sSum = 0, sCount = 0;
         s.grades.forEach(g => { if(g.score) { allSum += g.score; allCount++; sSum += g.score; sCount++; } });
-        if(sCount > 0 && (sSum/sCount) >= 75) passing++;
+        if(sCount > 0 && (sSum/sCount) <= 3.0) passingCount++;
     });
 
-    $('stat-average-class').textContent = allCount ? (allSum / allCount).toFixed(1) : '0.0';
-    $('stat-pass-rate').textContent = total ? Math.round((passing / total) * 100) + '%' : '0%';
+    $('stat-average-class').textContent = allCount ? (allSum / allCount).toFixed(2) : '0.00';
+    $('stat-pass-rate').textContent = total ? Math.round((passingCount / total) * 100) + '%' : '0%';
     
     updateChart(subjects.map(s => s.name), subjects.map(sub => {
         const subGrades = data.flatMap(s => s.grades).filter(g => g.subject_id === sub.id && g.score);
-        return subGrades.length ? (subGrades.reduce((a,b) => a + b.score, 0) / subGrades.length).toFixed(1) : 0;
+        return subGrades.length ? (subGrades.reduce((a,b) => a + b.score, 0) / subGrades.length).toFixed(2) : 5;
     }));
 }
 
 // --- UTILS ---
-
 async function addSemester() {
     const name = $('semester-name').value.trim();
     if (name) {
@@ -320,8 +311,19 @@ function initChart() {
     const ctx = $('dashboard-chart').getContext('2d');
     dashboardChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Avg', data: [], backgroundColor: '#800000' }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+        data: { labels: [], datasets: [{ label: 'Avg Grade', data: [], backgroundColor: '#800000' }] },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+                y: { 
+                    min: 1, 
+                    max: 5, 
+                    reverse: true, // 1.0 is top, 5.0 is bottom
+                    ticks: { stepSize: 1 }
+                } 
+            } 
+        }
     });
 }
 

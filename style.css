@@ -408,3 +408,33 @@ body {
         display: none;
     }
 }
+
+/* Container for Search and Filters */
+.controls-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap; /* Allows it to stack nicely on small phones */
+    align-items: center;
+}
+
+.search-wrapper {
+    flex: 2; /* Search bar takes more space */
+    min-width: 200px;
+    position: relative;
+}
+
+.filter-wrapper {
+    flex: 1; /* Dropdowns take less space */
+    min-width: 120px;
+}
+
+/* Make inputs look consistent */
+.glass-input {
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
