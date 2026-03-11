@@ -253,10 +253,25 @@ body {
 .toast { background: white; padding: 1rem; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 10px; border-left: 5px solid var(--primary); }
 
 @media (max-width: 1024px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
+    .sidebar {
+        transform: translateX(-100%);
+        visibility: hidden;
+    }
+    .sidebar.open {
+        transform: translateX(0);
+        visibility: visible;
+        z-index: 2000;
+    }
+    .sidebar-overlay.active {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1500;
+    }
     .main-content { margin-left: 0; }
-    .sidebar-open-btn { display: block; }
+    .dashboard-grid { grid-template-columns: 1fr; } /* Fix repeating/stacking */
+    .hide-mobile { display: none; }
 }
 
 /* Sidebar overlay (click to close sidebar on mobile) */
@@ -319,4 +334,73 @@ body {
     background-color: rgba(128, 0, 0, 0.1); /* Light maroon tint */
     color: var(--primary);
     transform: scale(1.1);
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 100%; /* Sidebar takes full width when open on mobile */
+    }
+
+    /* Hide sidebar by default on mobile */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        box-shadow: none;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.3);
+    }
+
+    /* Adjust Main Content */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+
+    /* Stack Dashboard Cards */
+    .dashboard-grid {
+        grid-template-columns: 1fr; /* Change from 2 columns to 1 */
+        padding: 1rem;
+    }
+
+    /* Make Table Scrollable horizontally */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #student-table {
+        min-width: 600px; /* Forces scroll instead of squishing text */
+    }
+
+    /* Adjust Top Bar */
+    .top-bar {
+        padding: 0.8rem 1rem;
+    }
+
+    .top-bar h2 {
+        font-size: 1.2rem;
+    }
+
+    /* Hamburger Menu Button (Ensure this is in your HTML) */
+    .mobile-toggle {
+        display: block !important;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--primary);
+        cursor: pointer;
+        margin-right: 15px;
+    }
+}
+
+/* Hide toggle on desktop */
+@media (min-width: 1025px) {
+    .mobile-toggle {
+        display: none;
+    }
 }

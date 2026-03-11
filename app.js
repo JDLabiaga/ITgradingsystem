@@ -18,29 +18,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
+    // Mobile Sidebar Toggle
+    $('mobile-menu-btn').onclick = () => {
+        $('sidebar').classList.add('open');
+        $('sidebar-overlay').classList.add('active');
+    };
 
-    // Mobile Menu Toggle
-    const menuBtn = $('mobile-menu-btn');
-    const sidebar = $('sidebar');
+    // Close Sidebar
+    const closeSidebar = () => {
+        $('sidebar').classList.remove('open');
+        $('sidebar-overlay').classList.remove('active');
+    };
 
-    if (menuBtn) {
-        menuBtn.onclick = () => {
-            sidebar.classList.toggle('open');
-        };
-    }
+    $('close-sidebar').onclick = closeSidebar;
+    $('sidebar-overlay').onclick = closeSidebar;
 
-    // Close sidebar when clicking a subject on mobile
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 1024 && e.target.closest('.subject-item')) {
-            sidebar.classList.remove('open');
-        }
-    });
-    
-    // Semester Selection
+    // Semester Change
     $('semester-select').onchange = (e) => {
         currentSemesterId = e.target.value;
         localStorage.setItem('selectedSemesterId', currentSemesterId || '');
         loadDashboard();
+        if(window.innerWidth <= 1024) closeSidebar();
     };
 
     // Modal Triggers
@@ -88,11 +86,13 @@ async function loadDashboard() {
         $('empty-state').style.display = 'flex';
         $('table-section').style.display = 'none';
         $('subjects-section').style.display = 'none';
+        $('add-student-btn').style.display = 'none';
         return;
     }
     
     $('empty-state').style.display = 'none';
     $('subjects-section').style.display = 'block';
+    $('add-student-btn').style.display = 'inline-flex';
 
     const { data: subData } = await db.from('subjects2').select('*').eq('semester_id', currentSemesterId);
     subjects = subData || [];
