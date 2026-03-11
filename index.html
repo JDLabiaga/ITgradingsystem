@@ -3,33 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Grading System | Pro Portal</title>
+    <title>IT Grading System</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="it-theme">
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-    
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand"><i class="fa-solid fa-microchip"></i> <span>PRO PORTAL</span></div>
             <button class="btn-icon" id="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
         <div class="menu-section">
             <label class="menu-label">Batch Management</label>
             <select id="semester-select" class="tech-select"></select>
-            <button class="btn-neon w-100" id="add-semester-btn"><i class="fa-solid fa-plus"></i> NEW BATCH</button>
+            <button class="btn-neon w-100" id="add-semester-btn">NEW BATCH</button>
         </div>
-
         <div class="menu-section" id="subjects-section" style="display:none;">
-            <label class="menu-label">Active Modules</label>
-            <div id="subject-list" class="subject-pills-container"></div>
-            <button class="btn-outline-neon" id="add-subject-btn"><i class="fa-solid fa-terminal"></i> Add Module</button>
+            <label class="menu-label">Modules</label>
+            <div id="subject-list"></div>
+            <button class="btn-outline-neon" id="add-subject-btn">+ Module</button>
         </div>
     </aside>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <main class="main-content">
         <header class="top-bar">
@@ -37,34 +35,25 @@
                 <button class="mobile-toggle" id="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
                 <div class="breadcrumb">SYSTEM / <span id="active-batch-display">DASHBOARD</span></div>
             </div>
-            <button class="btn-neon" id="add-student-btn" style="display:none;">
-                <i class="fa-solid fa-user-plus"></i> <span>Enroll</span>
-            </button>
+            <button class="btn-neon" id="add-student-btn" style="display:none;">+ Enroll</button>
         </header>
 
         <div id="empty-state" class="empty-state-tech">
-            <div class="pulse-icon"><i class="fa-solid fa-database"></i></div>
             <h3>System Standby</h3>
-            <p>Select or create a batch to begin.</p>
+            <p>Select a batch to begin.</p>
         </div>
 
         <div id="table-section" style="display:none;">
             <div class="dashboard-grid">
-                <div class="card chart-card">
-                    <div class="chart-container"><canvas id="dashboard-chart"></canvas></div>
-                </div>
-                <div class="stats-container-grid">
-                    <div class="stat-tile"><span>Headcount</span><div class="stat-value" id="stat-total-students">0</div></div>
-                    <div class="stat-tile accent"><span>Batch GWA</span><div class="stat-value" id="stat-average-class">0.00</div></div>
-                    <div class="stat-tile success"><span>Success Rate</span><div class="stat-value" id="stat-pass-rate">0%</div></div>
+                <div class="card"><canvas id="dashboard-chart"></canvas></div>
+                <div class="stats-grid">
+                    <div class="stat-tile"><span>Headcount</span><div id="stat-total-students" class="stat-val">0</div></div>
+                    <div class="stat-tile accent"><span>GWA</span><div id="stat-average-class" class="stat-val">0.00</div></div>
                 </div>
             </div>
-
             <div class="search-box-tech">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-input" placeholder="Search name or section...">
+                <input type="text" id="search-input" placeholder="Search students...">
             </div>
-
             <div class="table-container-tech">
                 <table class="tech-table">
                     <thead><tr id="table-header"></tr></thead>
@@ -74,9 +63,11 @@
         </div>
     </main>
 
-    <!-- MODALS -->
-    <div class="modal-overlay" id="semester-modal"><div class="modal tech-modal"><h3>New Batch</h3><input type="text" id="semester-name" class="tech-input"><div class="modal-footer"><button class="btn-neon" id="save-semester-btn">Create</button><button class="btn-text" onclick="closeModal('semester-modal')">Cancel</button></div></div></div>
-    <div class="modal-overlay" id="subject-modal"><div class="modal tech-modal"><h3>New Module</h3><input type="text" id="new-subject-name" class="tech-input"><div class="modal-footer"><button class="btn-neon" id="save-subject-btn">Add</button><button class="btn-text" onclick="closeModal('subject-modal')">Cancel</button></div></div></div>
-    <div class="modal-overlay" id="student-modal"><div class="modal tech-modal wide"><h3>Enrollment</h3><div class="input-grid"><input type="text" id="new-student-name" class="tech-input" placeholder="Name"><div class="flex-row"><input type="text" id="new-student-year" class="tech-input" placeholder="Yr"><input type="text" id="new-student-section" class="tech-input" placeholder="Sec"></div></div><div id="grade-inputs" class="tech-scroll-area"></div><div class="modal-footer"><button class="btn-neon" id="save-student-btn">Push to DB</button><button class="btn-text" onclick="closeModal('student-modal')">Cancel</button></div></div></div>
+    <!-- Modals -->
+    <div class="modal-overlay" id="semester-modal"><div class="modal tech-modal"><h3>New Batch</h3><input type="text" id="semester-name" class="tech-input"><button class="btn-neon" id="save-semester-btn">Save</button><button onclick="closeModal('semester-modal')">Cancel</button></div></div>
+    <div class="modal-overlay" id="subject-modal"><div class="modal tech-modal"><h3>New Module</h3><input type="text" id="new-subject-name" class="tech-input"><button class="btn-neon" id="save-subject-btn">Save</button><button onclick="closeModal('subject-modal')">Cancel</button></div></div>
+    <div class="modal-overlay" id="student-modal"><div class="modal tech-modal"><h3>Enroll</h3><input type="text" id="new-student-name" class="tech-input" placeholder="Name"><input type="text" id="new-student-section" class="tech-input" placeholder="Section"><div id="grade-inputs"></div><button class="btn-neon" id="save-student-btn">Save</button><button onclick="closeModal('student-modal')">Cancel</button></div></div>
+
+    <script src="app.js"></script>
 </body>
 </html>
