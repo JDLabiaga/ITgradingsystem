@@ -200,38 +200,20 @@ async function executeDelete() {
     if (!studentToDelete) return;
 
     try {
-        // 1. Delete all grades associated with this student first
-        const { error: gradeError } = await db
-            .from('grades2')
-            .delete()
-            .eq('student_id', studentToDelete);
+        // You only need this one call now! SQL handles the rest.
+        const { error } = await db.from('students2').delete().eq('id', studentToDelete);
 
-        if (gradeError) {
-            console.error("Grade Delete Error:", gradeError);
-            throw gradeError;
-        }
+        if (error) throw error;
 
-        // 2. Now delete the student
-        const { error: studentError } = await db
-            .from('students2')
-            .delete()
-            .eq('id', studentToDelete);
-
-        if (studentError) {
-            console.error("Student Delete Error:", studentError);
-            throw studentError;
-        }
-
-        // 3. Success UI updates
-        showToast('Student and records deleted', 'success');
+        showToast('Student removed successfully', 'success');
         closeModal('confirm-modal');
         closeModal('edit-modal');
         
         studentToDelete = null; 
-        await loadStudents(); // Refresh the table
+        await loadStudents(); // This refreshes your table and charts
     } catch (err) {
-        console.error("Full Delete Error:", err);
-        showToast('Delete failed. Check console.', 'danger');
+        console.error("Delete Error:", err);
+        showToast('Delete failed. Check connection.', 'danger');
     }
 }
 

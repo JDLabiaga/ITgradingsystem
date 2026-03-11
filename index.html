@@ -183,7 +183,8 @@
             <h3>Delete Record?</h3>
             <p>Are you sure? This cannot be undone.</p>
             <div class="modal-footer flex-center">
-                <button class="btn btn-danger" id="confirm-delete-btn">Yes, Delete</button>
+<!-- Inside your confirm-modal -->
+                <button id="confirm-delete-btn" class="btn btn-danger" onclick="executeDelete()">Yes, Delete</button>
                 <button class="btn btn-text" data-close="confirm-modal">No, Keep</button>
             </div>
         </div>
