@@ -18,6 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
+
+    // Mobile Menu Toggle
+    const menuBtn = $('mobile-menu-btn');
+    const sidebar = $('sidebar');
+
+    if (menuBtn) {
+        menuBtn.onclick = () => {
+            sidebar.classList.toggle('open');
+        };
+    }
+
+    // Close sidebar when clicking a subject on mobile
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 1024 && e.target.closest('.subject-item')) {
+            sidebar.classList.remove('open');
+        }
+    });
+    
     // Semester Selection
     $('semester-select').onchange = (e) => {
         currentSemesterId = e.target.value;
