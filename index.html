@@ -39,11 +39,11 @@
             </div>
         </div>
 
-        <!-- Subjects Section (Visible only when semester is selected) -->
+        <!-- Subjects Section -->
         <div class="menu-section" id="subjects-section" style="display:none;">
             <label class="menu-label">SUBJECTS <i class="fa-solid fa-book-open"></i></label>
             <div id="subject-list" class="subject-pills-container">
-                <!-- Subject rows with delete buttons injected via app.js -->
+                <!-- Subjects injected via app.js -->
             </div>
             <button class="btn btn-outline btn-sm sidebar-add-btn" id="add-subject-btn">
                 <i class="fa-solid fa-plus"></i> Add Subject
@@ -77,28 +77,41 @@
                     <i class="fa-solid fa-layer-group"></i>
                 </div>
                 <h3>No Semester Selected</h3>
-                <p>Please select an active semester from the sidebar or create a new one to begin managing your student records and grades.</p>
+                <p>Select an active semester from the sidebar to begin.</p>
             </div>
 
             <!-- DASHBOARD CONTENT -->
             <div id="table-section" style="display:none;">
                 <div class="dashboard-grid">
+                    <!-- CHART CARD -->
                     <div class="card chart-card">
-                        <div class="card-header"><h3>Subject Performance (1.0-5.0)</h3></div>
-                        <div class="card-body"><canvas id="dashboard-chart"></canvas></div>
+                        <div class="card-header"><h3><i class="fa-solid fa-chart-line"></i> Subject Performance (1.0-5.0)</h3></div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="dashboard-chart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card stats-card">
-                        <div class="card-header"><h3>Class Summary</h3></div>
-                        <div class="stats-body">
-                            <div class="stat">
+
+                    <!-- INTERACTIVE CLASS SUMMARY -->
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                            <div class="stat-info">
                                 <span class="stat-label">Total Students</span>
                                 <div class="stat-value" id="stat-total-students">0</div>
                             </div>
-                            <div class="stat">
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+                            <div class="stat-info">
                                 <span class="stat-label">Class GWA</span>
                                 <div class="stat-value" id="stat-average-class">0.00</div>
                             </div>
-                            <div class="stat">
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="stat-info">
                                 <span class="stat-label">Pass Rate</span>
                                 <div class="stat-value" id="stat-pass-rate">0%</div>
                             </div>
@@ -113,17 +126,13 @@
                         <input type="text" id="search-input" placeholder="Search by name...">
                     </div>
                     <div class="filter-group">
-                        <select id="filter-year" class="glass-select">
-                            <option value="">All Years</option>
-                        </select>
-                        <select id="filter-section" class="glass-select">
-                            <option value="">All Sections</option>
-                        </select>
+                        <select id="filter-year" class="glass-select"><option value="">All Years</option></select>
+                        <select id="filter-section" class="glass-select"><option value="">All Sections</option></select>
                     </div>
                 </div>
 
-                <!-- DATA TABLE -->
-                <div class="table-container">
+                <!-- DATA TABLE (RESPONSIVE) -->
+                <div class="table-responsive">
                     <table id="student-table">
                         <thead><tr id="table-header"></tr></thead>
                         <tbody id="table-body"></tbody>
@@ -134,7 +143,6 @@
     </main>
 
     <!-- MODALS -->
-    
     <!-- New Semester Modal -->
     <div class="modal-overlay" id="semester-modal">
         <div class="modal">
@@ -182,7 +190,6 @@
         <div class="modal">
             <div class="modal-header">
                 <h3>Edit Record</h3>
-                <!-- Student delete handled via the confirm modal logic -->
                 <button class="btn-icon text-danger" id="delete-student-btn" onclick="openModal('confirm-modal')">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -201,14 +208,14 @@
         </div>
     </div>
 
-    <!-- Confirmation Modal (Generic for deletion) -->
+    <!-- Confirmation Modal -->
     <div class="modal-overlay" id="confirm-modal">
         <div class="modal text-center">
             <div class="warn-icon">
                 <i class="fa-solid fa-triangle-exclamation text-danger"></i>
             </div>
             <h3>Confirm Delete</h3>
-            <p>Are you sure you want to remove this record? This action is permanent and will delete all associated data.</p>
+            <p>This action is permanent and will delete all associated data.</p>
             <div class="modal-footer flex-center">
                 <button id="confirm-delete-btn" class="btn btn-danger" onclick="executeDelete()">Yes, Delete</button>
                 <button class="btn btn-text" data-close="confirm-modal">No, Keep</button>

@@ -1,3 +1,4 @@
+/* --- 1. CONFIGURATION --- */
 const SUPABASE_URL = 'https://bjcqygaqqgknplzjbmiw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqY3F5Z2FxcWdrbnBsempibWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNDQ4NzMsImV4cCI6MjA4ODYyMDg3M30._I5BxEMAK7PtHc87fGhmlPJf31H3j525NqNoUjAgwR8'; 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -10,7 +11,7 @@ let studentToDelete = null;
 
 const $ = (id) => document.getElementById(id);
 
-// --- INITIALIZATION ---
+/* --- 2. INITIALIZATION --- */
 document.addEventListener('DOMContentLoaded', () => {
     loadSemesters();
     initChart();
@@ -18,27 +19,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
-    // SINGLE TOGGLE FUNCTION FOR ALL DEVICES
+    // Responsive Sidebar Toggle Logic
     const toggleSidebar = () => {
         const sidebar = $('sidebar');
         const overlay = $('sidebar-overlay');
         
         if (window.innerWidth > 1024) {
-            // DESKTOP: Toggle 'collapsed'
             sidebar.classList.toggle('collapsed');
         } else {
-            // MOBILE: Toggle 'open'
             sidebar.classList.toggle('open');
             overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
         }
     };
 
-    // All triggers
     $('mobile-menu-btn').onclick = toggleSidebar;
     $('close-sidebar').onclick = toggleSidebar;
     $('sidebar-overlay').onclick = toggleSidebar;
 
-    // Close sidebar on mobile when a semester is picked
+    // Semester Selection
     $('semester-select').onchange = (e) => {
         currentSemesterId = e.target.value;
         localStorage.setItem('selectedSemesterId', currentSemesterId || '');
@@ -50,7 +48,7 @@ function bindEvents() {
         }
     };
 
-    // Standard Buttons
+    // Main Buttons
     $('add-semester-btn').onclick = () => openModal('semester-modal');
     $('add-subject-btn').onclick = () => openModal('subject-modal');
     $('add-student-btn').onclick = openAddStudentModal;
@@ -60,18 +58,19 @@ function bindEvents() {
     $('update-student-btn').onclick = updateStudent;
     $('confirm-delete-btn').onclick = executeDelete;
 
-    // Filters
+    // Search & Filters
     $('search-input').oninput = renderTable;
     $('filter-year').onchange = renderTable;
     $('filter-section').onchange = renderTable;
 
-    // Modal Close Logic
+    // Global Modal Close Logic
     document.addEventListener('click', (e) => {
         if (e.target.dataset.close) closeModal(e.target.dataset.close);
         if (e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
     });
 }
-// --- DATA FETCHING ---
+
+/* --- 3. DATA FETCHING --- */
 async function loadSemesters() {
     const { data } = await db.from('semesters2').select('*').order('created_at', { ascending: false });
     const select = $('semester-select');
@@ -131,13 +130,110 @@ async function loadStudents() {
     renderTable();
 }
 
-// --- STUDENT LOGIC ---
+/* --- 4. TABLE RENDERING (Responsive & Interactive) --- */
+function renderTable() {
+    const searchTerm = $('search-input').value.toLowerCase();
+    const year = $('filter-year').value;
+    const sec = $('filter-section').value;
+
+    const filtered = students.filter(s => 
+        s.full_name.toLowerCase().includes(searchTerm) &&
+        (!year || s.year_level === year) &&
+        (!sec || s.section === sec)
+    );
+
+    // Build Responsive Headers
+    $('table-header').innerHTML = '<th>Student Information</th>' + 
+        subjects.map(sub => `<th class="text-center">${sub.name}</th>`).join('') + 
+        '<th>GWA</th><th>Action</th>';
+
+    // Build Table Rows
+    $('table-body').innerHTML = filtered.map(s => {
+        let sum = 0, count = 0;
+        const cells = subjects.map(sub => {
+            const g = s.grades.find(g => g.subject_id === sub.id);
+            const val = (g && g.score !== null) ? g.score : '-';
+            if (val !== '-') { sum += parseFloat(val); count++; }
+            return `<td class="text-center">${val}</td>`;
+        }).join('');
+
+        const gwa = count > 0 ? (sum / count).toFixed(2) : '0.00';
+        const isPass = parseFloat(gwa) > 0 && parseFloat(gwa) <= 3.0;
+
+        return `
+            <tr>
+                <td style="text-align: left; padding-left: 20px;">
+                    <div style="font-weight: 700; color: var(--text);">${s.full_name}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-light);">${s.year_level || ''} ${s.section || ''}</div>
+                </td>
+                ${cells}
+                <td class="text-center"><span class="badge ${isPass ? 'pass' : 'fail'}">${gwa}</span></td>
+                <td class="text-center">
+                    <button class="btn-icon text-danger" onclick="setStudentToDelete('${s.id}')">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>`;
+    }).join('');
+
+    updateStats(filtered);
+}
+
+/* --- 5. STATS & CHART --- */
+function updateStats(data) {
+    const total = data.length;
+    $('stat-total-students').textContent = total;
+    
+    let allSum = 0, allCount = 0, passingCount = 0;
+    data.forEach(s => {
+        let sSum = 0, sCount = 0;
+        s.grades.forEach(g => { if(g.score) { allSum += g.score; allCount++; sSum += g.score; sCount++; } });
+        if(sCount > 0 && (sSum/sCount) <= 3.0) passingCount++;
+    });
+
+    $('stat-average-class').textContent = allCount ? (allSum / allCount).toFixed(2) : '0.00';
+    $('stat-pass-rate').textContent = total ? Math.round((passingCount / total) * 100) + '%' : '0%';
+    
+    // Update Chart with filtered data
+    const chartLabels = subjects.map(s => s.name);
+    const chartValues = subjects.map(sub => {
+        const subGrades = data.flatMap(s => s.grades).filter(g => g.subject_id === sub.id && g.score);
+        return subGrades.length ? (subGrades.reduce((a,b) => a + b.score, 0) / subGrades.length).toFixed(2) : 5.0;
+    });
+    updateChart(chartLabels, chartValues);
+}
+
+function initChart() {
+    const ctx = $('dashboard-chart').getContext('2d');
+    dashboardChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Average Grade', data: [], backgroundColor: '#800000', borderRadius: 8 }] },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: { 
+                y: { min: 1, max: 5, reverse: true, ticks: { stepSize: 1, color: '#64748b' }, grid: { color: '#f1f5f9' } },
+                x: { ticks: { color: '#64748b' }, grid: { display: false } }
+            } 
+        }
+    });
+}
+
+function updateChart(labels, data) {
+    if (!dashboardChart) return;
+    dashboardChart.data.labels = labels;
+    dashboardChart.data.datasets[0].data = data;
+    dashboardChart.update();
+}
+
+/* --- 6. ACTIONS (ADD, EDIT, DELETE) --- */
 function openAddStudentModal() {
     const container = $('grade-inputs');
     container.innerHTML = subjects.map(sub => `
-        <div class="input-group" style="margin-bottom:10px;">
-            <label style="font-size:0.75rem; color:var(--primary);">${sub.name}</label>
-            <input type="number" step="0.1" class="subject-grade-input glass-input-table" data-subject-id="${sub.id}" placeholder="1.0 - 5.0" style="width:100%">
+        <div class="input-group" style="margin-bottom:12px;">
+            <label style="font-size:0.7rem; color:var(--primary); font-weight:700; text-transform:uppercase;">${sub.name}</label>
+            <input type="number" step="0.1" class="subject-grade-input glass-input" data-subject-id="${sub.id}" placeholder="1.0 - 5.0" style="width:100%">
         </div>
     `).join('');
     openModal('student-modal');
@@ -161,12 +257,16 @@ async function saveStudent() {
 
         if (grades.length > 0) await db.from('grades2').insert(grades);
         closeModal('student-modal');
-        showToast('Student Added', 'success');
+        showToast('Student Enrolled', 'success');
         loadStudents();
     }
 }
 
-// Set global function for the trash icon in table
+async function updateStudent() {
+    // Note: If you need to add specific update logic for grades, it goes here.
+    // This is currently wired to your Update button in the HTML.
+}
+
 window.setStudentToDelete = (id) => {
     studentToDelete = id;
     openModal('confirm-modal');
@@ -174,117 +274,27 @@ window.setStudentToDelete = (id) => {
 
 async function executeDelete() {
     if (!studentToDelete) return;
-
-    try {
-        const { error } = await db.from('students2').delete().eq('id', studentToDelete);
-        if (error) throw error;
-
-        showToast('Student removed successfully', 'success');
+    const { error } = await db.from('students2').delete().eq('id', studentToDelete);
+    if (!error) {
+        showToast('Record deleted', 'success');
         closeModal('confirm-modal');
-        closeModal('edit-modal');
-        
-        studentToDelete = null; 
-        await loadStudents(); 
-    } catch (err) {
-        console.error("Delete Error:", err);
-        showToast('Delete failed', 'danger');
+        loadStudents();
     }
+    studentToDelete = null;
 }
 
-// Global DELETE SUBJECT
 window.deleteSubject = async (subjectId) => {
-    if (!confirm("Delete this subject and all associated grades?")) return;
-    
+    if (!confirm("Delete this subject?")) return;
     const { error } = await db.from('subjects2').delete().eq('id', subjectId);
-    if (error) {
-        showToast("Error deleting subject", "danger");
-    } else {
-        showToast("Subject deleted", "success");
-        loadDashboard(); 
-    }
+    if (!error) { loadDashboard(); showToast('Subject removed', 'success'); }
 };
 
-// Global DELETE SEMESTER
 window.deleteSemester = async () => {
-    if (!currentSemesterId) return;
-    const name = $("semester-select").options[$("semester-select").selectedIndex].text;
-    
-    if (!confirm(`Are you sure? This will permanently delete the semester "${name}" and ALL students/grades inside it.`)) return;
-
+    if (!currentSemesterId || !confirm("Delete this entire semester and all data?")) return;
     const { error } = await db.from('semesters2').delete().eq('id', currentSemesterId);
-    if (error) {
-        showToast("Error deleting semester", "danger");
-    } else {
-        showToast("Semester deleted", "success");
-        localStorage.removeItem('selectedSemesterId');
-        location.reload(); 
-    }
+    if (!error) { localStorage.removeItem('selectedSemesterId'); location.reload(); }
 };
 
-function renderTable() {
-    const searchTerm = $('search-input').value.toLowerCase();
-    const year = $('filter-year').value;
-    const sec = $('filter-section').value;
-
-    const filtered = students.filter(s => 
-        s.full_name.toLowerCase().includes(searchTerm) &&
-        (!year || s.year_level === year) &&
-        (!sec || s.section === sec)
-    );
-
-    $('table-header').innerHTML = '<th>Student Information</th>' + 
-        subjects.map(sub => `<th class="text-center">${sub.name}</th>`).join('') + 
-        '<th>GWA</th><th>Action</th>';
-
-    $('table-body').innerHTML = filtered.map(s => {
-        let sum = 0, count = 0;
-        const cells = subjects.map(sub => {
-            const g = s.grades.find(g => g.subject_id === sub.id);
-            const val = (g && g.score !== null) ? g.score : '-';
-            if (val !== '-') { sum += parseFloat(val); count++; }
-            return `<td class="text-center">${val}</td>`;
-        }).join('');
-
-        const gwa = count > 0 ? (sum / count).toFixed(2) : '0.00';
-        const isPass = parseFloat(gwa) > 0 && parseFloat(gwa) <= 3.0;
-
-        return `
-            <tr>
-                <td><strong>${s.full_name}</strong><br><small>${s.year_level || ''} ${s.section || ''}</small></td>
-                ${cells}
-                <td class="text-center"><span class="badge ${isPass ? 'pass' : 'fail'}">${gwa}</span></td>
-                <td class="text-center">
-                    <button class="btn-icon text-danger" onclick="setStudentToDelete('${s.id}')">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-    }).join('');
-
-    updateStats(filtered);
-}
-
-function updateStats(data) {
-    const total = data.length;
-    $('stat-total-students').textContent = total;
-    
-    let allSum = 0, allCount = 0, passingCount = 0;
-    data.forEach(s => {
-        let sSum = 0, sCount = 0;
-        s.grades.forEach(g => { if(g.score) { allSum += g.score; allCount++; sSum += g.score; sCount++; } });
-        if(sCount > 0 && (sSum/sCount) <= 3.0) passingCount++;
-    });
-
-    $('stat-average-class').textContent = allCount ? (allSum / allCount).toFixed(2) : '0.00';
-    $('stat-pass-rate').textContent = total ? Math.round((passingCount / total) * 100) + '%' : '0%';
-    
-    updateChart(subjects.map(s => s.name), subjects.map(sub => {
-        const subGrades = data.flatMap(s => s.grades).filter(g => g.subject_id === sub.id && g.score);
-        return subGrades.length ? (subGrades.reduce((a,b) => a + b.score, 0) / subGrades.length).toFixed(2) : 5;
-    }));
-}
-
-// --- UTILS ---
 async function addSemester() {
     const name = $('semester-name').value.trim();
     if (name) {
@@ -305,11 +315,12 @@ async function addSubject() {
     }
 }
 
+/* --- 7. UTILS --- */
 function updateFilterOptions() {
     const years = [...new Set(students.map(s => s.year_level))].filter(Boolean);
     const sections = [...new Set(students.map(s => s.section))].filter(Boolean);
-    $('filter-year').innerHTML = '<option value="">Year Level</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-    $('filter-section').innerHTML = '<option value="">Section</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
+    $('filter-year').innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    $('filter-section').innerHTML = '<option value="">All Sections</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function renderSubjectList() {
@@ -332,31 +343,4 @@ function showToast(msg, type) {
     t.innerHTML = msg;
     $('toast-container').appendChild(t);
     setTimeout(() => t.remove(), 3000);
-}
-
-function initChart() {
-    const ctx = $('dashboard-chart').getContext('2d');
-    dashboardChart = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Avg Grade', data: [], backgroundColor: '#800000' }] },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            scales: { 
-                y: { 
-                    min: 1, 
-                    max: 5, 
-                    reverse: true, 
-                    ticks: { stepSize: 1 }
-                } 
-            } 
-        }
-    });
-}
-
-function updateChart(labels, data) {
-    if (!dashboardChart) return;
-    dashboardChart.data.labels = labels;
-    dashboardChart.data.datasets[0].data = data;
-    dashboardChart.update();
 }
