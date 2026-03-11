@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Grading System</title>
+    <title>IT Grading System | Pro Portal</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,13 +17,16 @@
         </div>
         <div class="menu-section">
             <label class="menu-label">Batch Management</label>
-            <select id="semester-select" class="tech-select"></select>
+            <div class="flex-row">
+                <select id="semester-select" class="tech-select"></select>
+                <button class="btn-delete-small" id="delete-semester-btn" title="Delete Batch"><i class="fa-solid fa-trash"></i></button>
+            </div>
             <button class="btn-neon w-100" id="add-semester-btn">NEW BATCH</button>
         </div>
         <div class="menu-section" id="subjects-section" style="display:none;">
             <label class="menu-label">Modules</label>
-            <div id="subject-list"></div>
-            <button class="btn-outline-neon" id="add-subject-btn">+ Module</button>
+            <div id="subject-list" class="subject-pills"></div>
+            <button class="btn-outline-neon w-100" id="add-subject-btn">+ Add Module</button>
         </div>
     </aside>
 
@@ -35,26 +38,31 @@
                 <button class="mobile-toggle" id="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
                 <div class="breadcrumb">SYSTEM / <span id="active-batch-display">DASHBOARD</span></div>
             </div>
-            <button class="btn-neon" id="add-student-btn" style="display:none;">+ Enroll</button>
+            <button class="btn-neon" id="add-student-btn" style="display:none;">+ Enroll Student</button>
         </header>
 
         <div id="empty-state" class="empty-state-tech">
+            <div class="pulse-icon"><i class="fa-solid fa-terminal"></i></div>
             <h3>System Standby</h3>
-            <p>Select a batch to begin.</p>
+            <p>Select or create a batch to initialize the data stream.</p>
         </div>
 
         <div id="table-section" style="display:none;">
             <div class="dashboard-grid">
-                <div class="card"><canvas id="dashboard-chart"></canvas></div>
+                <div class="card chart-card"><canvas id="dashboard-chart"></canvas></div>
                 <div class="stats-grid">
                     <div class="stat-tile"><span>Headcount</span><div id="stat-total-students" class="stat-val">0</div></div>
-                    <div class="stat-tile accent"><span>GWA</span><div id="stat-average-class" class="stat-val">0.00</div></div>
+                    <div class="stat-tile accent"><span>Batch GWA</span><div id="stat-average-class" class="stat-val">0.00</div></div>
                 </div>
             </div>
-            <div class="search-box-tech">
-                <input type="text" id="search-input" placeholder="Search students...">
+            
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="Search by name...">
             </div>
-            <div class="table-container-tech">
+
+            <!-- Horizontal Scroll Container -->
+            <div class="table-responsive-wrapper">
                 <table class="tech-table">
                     <thead><tr id="table-header"></tr></thead>
                     <tbody id="table-body"></tbody>
@@ -63,10 +71,21 @@
         </div>
     </main>
 
-    <!-- Modals -->
-    <div class="modal-overlay" id="semester-modal"><div class="modal tech-modal"><h3>New Batch</h3><input type="text" id="semester-name" class="tech-input"><button class="btn-neon" id="save-semester-btn">Save</button><button onclick="closeModal('semester-modal')">Cancel</button></div></div>
-    <div class="modal-overlay" id="subject-modal"><div class="modal tech-modal"><h3>New Module</h3><input type="text" id="new-subject-name" class="tech-input"><button class="btn-neon" id="save-subject-btn">Save</button><button onclick="closeModal('subject-modal')">Cancel</button></div></div>
-    <div class="modal-overlay" id="student-modal"><div class="modal tech-modal"><h3>Enroll</h3><input type="text" id="new-student-name" class="tech-input" placeholder="Name"><input type="text" id="new-student-section" class="tech-input" placeholder="Section"><div id="grade-inputs"></div><button class="btn-neon" id="save-student-btn">Save</button><button onclick="closeModal('student-modal')">Cancel</button></div></div>
+    <!-- Modals (Batch & Subject) -->
+    <div class="modal-overlay" id="semester-modal"><div class="modal tech-modal"><h3>New Batch</h3><input type="text" id="semester-name" class="tech-input" placeholder="e.g. 1st Sem 2026"><button class="btn-neon" id="save-semester-btn">Save</button><button class="btn-text" onclick="closeModal('semester-modal')">Cancel</button></div></div>
+    <div class="modal-overlay" id="subject-modal"><div class="modal tech-modal"><h3>New Module</h3><input type="text" id="new-subject-name" class="tech-input" placeholder="e.g. Data Structures"><button class="btn-neon" id="save-subject-btn">Save</button><button class="btn-text" onclick="closeModal('subject-modal')">Cancel</button></div></div>
+    
+    <!-- Enrollment Modal -->
+    <div class="modal-overlay" id="student-modal">
+        <div class="modal tech-modal">
+            <h3>Enrollment</h3>
+            <input type="text" id="new-student-name" class="tech-input" placeholder="Full Name">
+            <input type="text" id="new-student-section" class="tech-input" placeholder="Section">
+            <div id="grade-inputs" class="grade-scroll-area"></div>
+            <button class="btn-neon" id="save-student-btn">Push to DB</button>
+            <button class="btn-text" onclick="closeModal('student-modal')">Cancel</button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
