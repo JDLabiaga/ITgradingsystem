@@ -1,7 +1,15 @@
-/* --- 1. CONFIGURATION --- */
+/* --- 1. CONFIGURATION & V3 TABLES --- */
 const SUPABASE_URL = 'https://bjcqygaqqgknplzjbmiw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqY3F5Z2FxcWdrbnBsempibWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNDQ4NzMsImV4cCI6MjA4ODYyMDg3M30._I5BxEMAK7PtHc87fGhmlPJf31H3j525NqNoUjAgwR8'; 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Pointing to the new Table Schema
+const TBL = {
+    SEM: 'semesters3',
+    SUB: 'subjects3',
+    STU: 'students3',
+    GRD: 'grades3'
+};
 
 let currentSemesterId = null;
 let subjects = [];
@@ -19,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
-    // Responsive Sidebar Toggle Logic
+    // IT Theme Sidebar Toggle
     const toggleSidebar = () => {
         const sidebar = $('sidebar');
         const overlay = $('sidebar-overlay');
@@ -36,10 +44,10 @@ function bindEvents() {
     $('close-sidebar').onclick = toggleSidebar;
     $('sidebar-overlay').onclick = toggleSidebar;
 
-    // Semester Selection
+    // Semester/Batch Selection
     $('semester-select').onchange = (e) => {
         currentSemesterId = e.target.value;
-        localStorage.setItem('selectedSemesterId', currentSemesterId || '');
+        localStorage.setItem('selectedBatchId', currentSemesterId || '');
         loadDashboard();
         
         if(window.innerWidth <= 1024) {
@@ -48,36 +56,34 @@ function bindEvents() {
         }
     };
 
-    // Main Buttons
+    // Main UI Actions
     $('add-semester-btn').onclick = () => openModal('semester-modal');
     $('add-subject-btn').onclick = () => openModal('subject-modal');
     $('add-student-btn').onclick = openAddStudentModal;
     $('save-semester-btn').onclick = addSemester;
     $('save-subject-btn').onclick = addSubject;
     $('save-student-btn').onclick = saveStudent;
-    $('update-student-btn').onclick = updateStudent;
     $('confirm-delete-btn').onclick = executeDelete;
 
-    // Search & Filters
+    // Terminal Search & Filters
     $('search-input').oninput = renderTable;
     $('filter-year').onchange = renderTable;
     $('filter-section').onchange = renderTable;
 
-    // Global Modal Close Logic
     document.addEventListener('click', (e) => {
         if (e.target.dataset.close) closeModal(e.target.dataset.close);
         if (e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
     });
 }
 
-/* --- 3. DATA FETCHING --- */
+/* --- 3. DATA FETCHING (V3) --- */
 async function loadSemesters() {
-    const { data } = await db.from('semesters2').select('*').order('created_at', { ascending: false });
+    const { data } = await db.from(TBL.SEM).select('*').order('created_at', { ascending: false });
     const select = $('semester-select');
-    select.innerHTML = '<option value="">Select Semester</option>';
+    select.innerHTML = '<option value="">Select Batch</option>';
     data?.forEach(sem => select.innerHTML += `<option value="${sem.id}">${sem.name}</option>`);
 
-    const saved = localStorage.getItem('selectedSemesterId');
+    const saved = localStorage.getItem('selectedBatchId');
     if (saved && data?.find(s => s.id === saved)) {
         select.value = saved;
         currentSemesterId = saved;
@@ -97,7 +103,7 @@ async function loadDashboard() {
     $('empty-state').style.display = 'none';
     $('subjects-section').style.display = 'block';
 
-    const { data: subData } = await db.from('subjects2').select('*').eq('semester_id', currentSemesterId);
+    const { data: subData } = await db.from(TBL.SUB).select('*').eq('semester_id', currentSemesterId);
     subjects = subData || [];
     renderSubjectList();
     
@@ -112,14 +118,14 @@ async function loadDashboard() {
 }
 
 async function loadStudents() {
-    const { data: studentList } = await db.from('students2').select('*').eq('semester_id', currentSemesterId);
+    const { data: studentList } = await db.from(TBL.STU).select('*').eq('semester_id', currentSemesterId);
     if (!studentList?.length) {
         students = [];
         renderTable();
         return;
     }
 
-    const { data: gradeData } = await db.from('grades2').select('*').in('student_id', studentList.map(s => s.id));
+    const { data: gradeData } = await db.from(TBL.GRD).select('*').in('student_id', studentList.map(s => s.id));
 
     students = studentList.map(s => ({
         ...s,
@@ -130,7 +136,7 @@ async function loadStudents() {
     renderTable();
 }
 
-/* --- 4. TABLE RENDERING (Responsive & Interactive) --- */
+/* --- 4. TABLE RENDERING --- */
 function renderTable() {
     const searchTerm = $('search-input').value.toLowerCase();
     const year = $('filter-year').value;
@@ -142,12 +148,12 @@ function renderTable() {
         (!sec || s.section === sec)
     );
 
-    // Build Responsive Headers
-    $('table-header').innerHTML = '<th>Student Information</th>' + 
+    // IT Table Header
+    $('table-header').innerHTML = '<th>System User / Student</th>' + 
         subjects.map(sub => `<th class="text-center">${sub.name}</th>`).join('') + 
-        '<th>GWA</th><th>Action</th>';
+        '<th>GWA</th><th>Actions</th>';
 
-    // Build Table Rows
+    // IT Table Rows
     $('table-body').innerHTML = filtered.map(s => {
         let sum = 0, count = 0;
         const cells = subjects.map(sub => {
@@ -162,14 +168,14 @@ function renderTable() {
 
         return `
             <tr>
-                <td style="text-align: left; padding-left: 20px;">
-                    <div style="font-weight: 700; color: var(--text);">${s.full_name}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-light);">${s.year_level || ''} ${s.section || ''}</div>
+                <td>
+                    <div class="stu-name">${s.full_name}</div>
+                    <div class="stu-meta">${s.year_level || ''} ${s.section || ''}</div>
                 </td>
                 ${cells}
                 <td class="text-center"><span class="badge ${isPass ? 'pass' : 'fail'}">${gwa}</span></td>
                 <td class="text-center">
-                    <button class="btn-icon text-danger" onclick="setStudentToDelete('${s.id}')">
+                    <button class="btn-icon btn-delete" onclick="setStudentToDelete('${s.id}')">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
@@ -194,7 +200,6 @@ function updateStats(data) {
     $('stat-average-class').textContent = allCount ? (allSum / allCount).toFixed(2) : '0.00';
     $('stat-pass-rate').textContent = total ? Math.round((passingCount / total) * 100) + '%' : '0%';
     
-    // Update Chart with filtered data
     const chartLabels = subjects.map(s => s.name);
     const chartValues = subjects.map(sub => {
         const subGrades = data.flatMap(s => s.grades).filter(g => g.subject_id === sub.id && g.score);
@@ -207,14 +212,14 @@ function initChart() {
     const ctx = $('dashboard-chart').getContext('2d');
     dashboardChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Average Grade', data: [], backgroundColor: '#800000', borderRadius: 8 }] },
+        data: { labels: [], datasets: [{ label: 'Avg Grade', data: [], backgroundColor: '#00f2ff', borderRadius: 4 }] },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
             plugins: { legend: { display: false } },
             scales: { 
-                y: { min: 1, max: 5, reverse: true, ticks: { stepSize: 1, color: '#64748b' }, grid: { color: '#f1f5f9' } },
-                x: { ticks: { color: '#64748b' }, grid: { display: false } }
+                y: { min: 1, max: 5, reverse: true, ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { ticks: { color: '#888' }, grid: { display: false } }
             } 
         }
     });
@@ -227,23 +232,25 @@ function updateChart(labels, data) {
     dashboardChart.update();
 }
 
-/* --- 6. ACTIONS (ADD, EDIT, DELETE) --- */
+/* --- 6. ACTIONS (OPTIMIZED FOR SPEED) --- */
 function openAddStudentModal() {
     const container = $('grade-inputs');
     container.innerHTML = subjects.map(sub => `
-        <div class="input-group" style="margin-bottom:12px;">
-            <label style="font-size:0.7rem; color:var(--primary); font-weight:700; text-transform:uppercase;">${sub.name}</label>
-            <input type="number" step="0.1" class="subject-grade-input glass-input" data-subject-id="${sub.id}" placeholder="1.0 - 5.0" style="width:100%">
+        <div class="input-group-tech">
+            <label>${sub.name}</label>
+            <input type="number" step="0.1" class="subject-grade-input tech-input" data-subject-id="${sub.id}" placeholder="0.0">
         </div>
     `).join('');
     openModal('student-modal');
+    $('new-student-name').focus();
 }
 
 async function saveStudent() {
-    const name = $('new-student-name').value.trim();
+    const nameInput = $('new-student-name');
+    const name = nameInput.value.trim();
     if (!name) return showToast('Name is required', 'danger');
 
-    const { data: student } = await db.from('students2').insert([{ 
+    const { data: student } = await db.from(TBL.STU).insert([{ 
         full_name: name, semester_id: currentSemesterId,
         year_level: $('new-student-year').value, section: $('new-student-section').value
     }]).select().single();
@@ -255,16 +262,17 @@ async function saveStudent() {
             score: i.value === '' ? null : parseFloat(i.value)
         })).filter(g => g.score !== null);
 
-        if (grades.length > 0) await db.from('grades2').insert(grades);
-        closeModal('student-modal');
-        showToast('Student Enrolled', 'success');
-        loadStudents();
+        if (grades.length > 0) await db.from(TBL.GRD).insert(grades);
+        
+        showToast(`${name} Synced`, 'success');
+        
+        // Speed Optimization: Keep modal open, clear name, focus for next entry
+        nameInput.value = '';
+        inputs.forEach(i => i.value = '');
+        nameInput.focus();
+        
+        loadStudents(); 
     }
-}
-
-async function updateStudent() {
-    // Note: If you need to add specific update logic for grades, it goes here.
-    // This is currently wired to your Update button in the HTML.
 }
 
 window.setStudentToDelete = (id) => {
@@ -274,9 +282,9 @@ window.setStudentToDelete = (id) => {
 
 async function executeDelete() {
     if (!studentToDelete) return;
-    const { error } = await db.from('students2').delete().eq('id', studentToDelete);
+    const { error } = await db.from(TBL.STU).delete().eq('id', studentToDelete);
     if (!error) {
-        showToast('Record deleted', 'success');
+        showToast('Purged from Database', 'success');
         closeModal('confirm-modal');
         loadStudents();
     }
@@ -284,21 +292,21 @@ async function executeDelete() {
 }
 
 window.deleteSubject = async (subjectId) => {
-    if (!confirm("Delete this subject?")) return;
-    const { error } = await db.from('subjects2').delete().eq('id', subjectId);
-    if (!error) { loadDashboard(); showToast('Subject removed', 'success'); }
+    if (!confirm("Remove this module?")) return;
+    const { error } = await db.from(TBL.SUB).delete().eq('id', subjectId);
+    if (!error) { loadDashboard(); showToast('Module Removed', 'success'); }
 };
 
 window.deleteSemester = async () => {
-    if (!currentSemesterId || !confirm("Delete this entire semester and all data?")) return;
-    const { error } = await db.from('semesters2').delete().eq('id', currentSemesterId);
-    if (!error) { localStorage.removeItem('selectedSemesterId'); location.reload(); }
+    if (!currentSemesterId || !confirm("Purge this entire batch?")) return;
+    const { error } = await db.from(TBL.SEM).delete().eq('id', currentSemesterId);
+    if (!error) { localStorage.removeItem('selectedBatchId'); location.reload(); }
 };
 
 async function addSemester() {
     const name = $('semester-name').value.trim();
     if (name) {
-        await db.from('semesters2').insert([{ name }]);
+        await db.from(TBL.SEM).insert([{ name }]);
         $('semester-name').value = '';
         closeModal('semester-modal');
         loadSemesters();
@@ -308,7 +316,7 @@ async function addSemester() {
 async function addSubject() {
     const name = $('new-subject-name').value.trim();
     if (name) {
-        await db.from('subjects2').insert([{ name, semester_id: currentSemesterId }]);
+        await db.from(TBL.SUB).insert([{ name, semester_id: currentSemesterId }]);
         $('new-subject-name').value = '';
         closeModal('subject-modal');
         loadDashboard();
@@ -320,16 +328,14 @@ function updateFilterOptions() {
     const years = [...new Set(students.map(s => s.year_level))].filter(Boolean);
     const sections = [...new Set(students.map(s => s.section))].filter(Boolean);
     $('filter-year').innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-    $('filter-section').innerHTML = '<option value="">All Sections</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
+    $('filter-section').innerHTML = '<option value="">Sections</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function renderSubjectList() {
     $('subject-list').innerHTML = subjects.map(s => `
-        <div class="subj-pill-container" style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px;">
-            <div class="subj-pill" style="color:white; font-size:0.8rem;">• ${s.name}</div>
-            <button class="btn-icon-sm" onclick="deleteSubject('${s.id}')" style="color:rgba(255,255,255,0.5); background:none; border:none; cursor:pointer;">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+        <div class="module-pill">
+            <span>${s.name}</span>
+            <button onclick="deleteSubject('${s.id}')"><i class="fa-solid fa-xmark"></i></button>
         </div>
     `).join('');
 }
@@ -339,8 +345,8 @@ function closeModal(id) { $(id).classList.remove('active'); }
 
 function showToast(msg, type) {
     const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.innerHTML = msg;
+    t.className = `toast-tech ${type}`;
+    t.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${msg}`;
     $('toast-container').appendChild(t);
     setTimeout(() => t.remove(), 3000);
 }
